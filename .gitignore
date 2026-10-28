@@ -33,7 +33,11 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 
-# ---- 渲染验收产物：可重新生成，不入库 ----
-# 用 `node render-harness.mjs && node shots.mjs` 随时重建。
-# 保留 measure.json / contrast.json 的意义也不大——它们是当次机器上的量测结果。
+# ---- 开发与验收产物：不随包发布 ----
+# 这个仓库只发布**项目文件**（宿主 + 前端 + 文档 + 示例图）。
+# 测试脚本、渲染验收页、截图与量测结果都留在本地，不进入版本库：
+#   tests/   23 个回归脚本（smoke / review-* / design-check / shots …）
+#   shots/   render-harness.mjs 生成的验收页与 PNG
+# 它们依赖临时目录与本机 Chrome，对使用者没有意义，属于维护者工具。
+tests/
 shots/

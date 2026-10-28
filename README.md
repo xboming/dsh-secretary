@@ -131,4 +131,12 @@
 
 ## 许可
 
-个人项目，未附许可文件。
+[MIT](LICENSE) © 2026 熊博明
+
+随便用、随便改、随便分发，商用也行。只要求保留版权声明。
+
+## 参与
+
+- 用着有问题、或者想要什么功能：[Discussions](https://github.com/xboming/dsh-secretary/discussions)
+- 确定是 bug：[Issues](https://github.com/xboming/dsh-secretary/issues)
+- 想改代码：[开发说明](docs/开发.md) 里有目录结构、热重载原理和完整测试清单
