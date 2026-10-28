@@ -88,18 +88,57 @@
 
 ## 改了代码怎么生效（重要）
 
-DSH 宿主对插件 JS 有**进程级 require 缓存**：
+DSH 宿主对插件 JS 有**进程级 require 缓存**。本插件自己绕开了它，所以只有入口需要重启：
 
 | 改了什么 | 怎么生效 |
 |---|---|
-| `client.js`（面板 UI） | **完全退出桌面端再打开** |
-| `lib/*.js`、`index.js`（宿主逻辑、工具） | **重启宿主**（退出重开；会话可从列表接续） |
-| `系统/域.json`、`系统/调度.json`、`系统/节假日.json` | **立即生效**，什么都不用做 |
+| `lib/*.js`（宿主逻辑、工具、路由、调度） | **`dev-reload.cmd hot`**，不用重启 |
+| `client.js`（面板 UI） | **按 Ctrl+R 刷新页面**（浏览器端模块，宿主从不 import 它） |
+| `index.js`（插件入口） | **重启宿主**（由宿主 import，改不了） |
+| `系统/*.json`（域/调度/节假日/社区） | **立即生效**，什么都不用做 |
+
+### 热重载怎么做到的
+
+Node 的 ESM 缓存以**模块 URL** 为键。给 URL 加 `?v=<版本>` 就是另一个模块，会重新求值。
+
+坑在于**子模块不会自动继承**：父模块带 `?v=2` 时，它的 `import './x.js'` 仍解析成不带
+query 的 URL，于是子模块永远命中旧缓存（实测确认，别指望"改父就够"）。
+
+所以 `lib/*.js` 的内部相对导入全部改成动态形式，并用 `rel()` 把当前模块的版本号往下传：
+
+```js
+// lib/secretary.js
+const { rel } = await import(new URL('./reloadable.js', import.meta.url).href);
+const { splitDocument } = await import(rel('./frontmatter.js', import.meta.url));
+```
+
+`POST /dsh-secretary/api/reload` 会用新版本号重新 import 整棵 lib 树，
+再整套重建工具、路由、定时器、提示词。
+
+**顺序是先拆旧的、再建新的**。反直觉，但有原因：工具用固定名字注册
+（`secretary_add` 等），旧代还挂着时注册同名工具会直接抛
+`tool "secretary_add" is already registered`，整个重载就失败了。
+代价是拆与建之间有几毫秒没有工具和路由，比彻底失败划算。
+新代建失败时会自动回滚重建旧版本，不会把插件留在没有工具的状态。
 
 `set_bundle` 关-开、`remove_bundle` + `install_bundle` **都不会**让宿主重新 import 插件 JS——
 这些操作只改链接与 patch，模块注册表里的旧实例继续服务（实测确认，勿再绕路）。
 
-面板的 `uiVersion` 自动刷新只在**宿主重启后**触发一次：新模块带来新版本号，已打开的面板自动重载成新 UI，不用手动找刷新。
+### 关于宿主自带的 HMR
+
+profile 的 `cordis.patch.yml` 里给 `hmr` 条目配了 `root` 指向本插件源码目录，
+**实测未触发模块替换**（5 次实验：改 lib、改 index、touch patch、改 hmr 段、写探针文件，
+`loadedAt` 均未变化）。原因未查明，可能与 `link:` 包的 realpath 匹配或 Windows 路径有关。
+插件自己的 reload 接口不依赖它。
+
+开发脚本在工作区根目录：
+
+```
+dev-reload.cmd           查看宿主状态与 GUI 地址
+dev-reload.cmd hot       热重载 lib/*.js
+dev-reload.cmd browser   只开页面（改 client.js 用）
+dev-reload.cmd restart   重启宿主（改 index.js 用）
+```
 
 ## 当前版本的范围
 
