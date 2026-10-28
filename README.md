@@ -99,9 +99,7 @@
 
 ### 面板
 
-| 浅色 | 窄屏 |
-|---|---|
-| ![浅色](docs/images/panel-light.png) | ![窄屏](docs/images/panel-narrow.png) |
+![浅色主题](docs/images/panel-light.png)
 
 - 深浅主题跟随 DSH，颜色走语义令牌，对比度按 WCAG 校准
 - 宽度按**插件容器实际宽度**重排，不是按浏览器窗口——侧栏展开、右侧栏打开都会正确换行
