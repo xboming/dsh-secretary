@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="知微观澜">
+  <!-- 上半：一点微光（见微知著）——一颗星与两粒光尘 -->
+  <path d="M12 3.2 13 5.6 15.4 6.6 13 7.6 12 10 11 7.6 8.6 6.6 11 5.6Z" fill="currentColor" stroke="none"/>
+  <circle cx="17.4" cy="4.2" r="0.9" fill="currentColor" stroke="none"/>
+  <circle cx="7.2" cy="4.8" r="0.6" fill="currentColor" stroke="none"/>
+  <!-- 下半：三道水澜（观水之澜）——由急到缓，代表工作/创作/灵感三域的波澜 -->
+  <path d="M4.5 14.2c2.5 0 2.5-1.7 5-1.7s2.5 1.7 5 1.7 2.5-1.7 5.5-1.7" stroke-width="1.9"/>
+  <path d="M5.5 18c2.2 0 2.2-1.5 4.4-1.5s2.2 1.5 4.4 1.5 2.2-1.5 4.7-1.5" stroke-width="1.5" opacity="0.75"/>
+  <path d="M7 21.3c1.8 0 1.8-1.2 3.6-1.2s1.8 1.2 3.6 1.2 1.8-1.2 3.9-1.2" stroke-width="1.2" opacity="0.5"/>
+</svg>

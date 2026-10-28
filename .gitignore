@@ -1,0 +1,34 @@
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 构建产物与缓存
+dist/
+build/
+*.log
+*.tmp
+
+# ---- 用户数据：本插件把记录写成 Markdown，绝不可入库 ----
+# 默认数据目录在 ~/.dsh/plugin-data/dsh-secretary，若有人把 dataDir 指到本仓库内，
+# 下面这些规则保证那些文件不会被误提交。
+工作/
+创作/
+灵感/
+助手/
+报告/
+系统/
+.trash/
+plugin-data/
+*.bak
+
+# 本地配置（含社区地址等个人设置）
+.env
+.env.*
+社区.json
+
+# 编辑器与系统
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini
+.DS_Store
