@@ -161,16 +161,25 @@ export function apply(ctx, config = {}) {
     .catch((error) => console.warn('[dsh-secretary] 初始化失败', error?.message));
 }
 
+/**
+ * 首次启动写入默认作息。
+ *
+ * 字段必须与 `lib/secretary.js` 的 `normalizeSchedule` 一致：
+ * 只种四类报告的生成时刻（各自周期最后一天），不再写 weekly/monthly——
+ * 那两项属于已移除的周报，留着只会让 `系统/调度.json` 看起来支持周报。
+ */
 async function seedDefaults(store, FILES) {
-  if (!(await store.exists(FILES.schedule))) {
-    await store.writeJson(FILES.schedule, {
-      timeZone: 'Asia/Shanghai',
-      reminderAt: '12:00',
-      reportWindow: { start: '22:00', end: '06:00' },
-      weekly: { weekday: 1 },
-      monthly: { day: 1 },
-      idleGraceMinutes: 5,
-      quietHours: { start: '22:00', end: '07:00' },
-    });
-  }
+  if (await store.exists(FILES.schedule)) return;
+  await store.writeJson(FILES.schedule, {
+    timeZone: 'Asia/Shanghai',
+    reminderAt: '12:00',
+    // 后台空闲窗口：仅描述，不推迟报告（见 lib/schedule.js 的投递说明）
+    reportWindow: { start: '20:00', end: '06:00' },
+    monthlyAt: '20:00',
+    quarterlyAt: '20:00',
+    halfAt: '20:00',
+    yearlyAt: '20:00',
+    idleGraceMinutes: 5,
+    quietHours: { start: '22:00', end: '07:00' },
+  });
 }

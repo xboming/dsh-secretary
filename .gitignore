@@ -32,3 +32,8 @@ plugin-data/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# ---- 渲染验收产物：可重新生成，不入库 ----
+# 用 `node render-harness.mjs && node shots.mjs` 随时重建。
+# 保留 measure.json / contrast.json 的意义也不大——它们是当次机器上的量测结果。
+shots/

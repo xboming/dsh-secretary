@@ -1,6 +1,6 @@
 {
   "name": "dsh-secretary",
-  "version": "0.11.0",
+  "version": "0.14.0",
   "private": true,
   "description": "知微观澜：把工作、创作、灵感记录成 Markdown，按空闲时段分析，每天固定时间提醒。",
   "type": "module",

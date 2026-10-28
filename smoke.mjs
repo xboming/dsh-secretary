@@ -201,7 +201,7 @@ await test('工作：expectedUpdated 乐观锁挡住外部改动', async () => {
   assert.equal(fresh.entry.status, 'doing');
 });
 
-await test('工作：过去的截止日期被拒绝', async () => {
+await test('工作：过去的截止日期被保留并标记为逾期（不再静默丢弃）', async () => {
   const created = await secretary.addRecord({
     domain: 'work',
     text: '补一条很久以前的事',
@@ -209,7 +209,9 @@ await test('工作：过去的截止日期被拒绝', async () => {
     fields: { deadline: '2020-01-01' },
   });
   const found = await secretary.find(created.id);
-  assert.equal(found.entry.deadline, undefined);
+  // 补录历史事项时，过去的截止日是真实数据：丢掉会让逾期统计凭空消失
+  assert.equal(found.entry.deadline, '2020-01-01', '过去的截止日期应保留');
+  assert.equal(created.deadlineInPast, true, '应明确告知期限已过');
 });
 
 await test('工作：无期限被拦下（need_deadline），openEnded 放行', async () => {
@@ -287,40 +289,40 @@ await test('提醒：一条消息，五段以内', async () => {
 
 await test('报告：事实可算，落盘幂等', async () => {
   const { buildReport } = await import('./lib/report.js');
-  const facts = await buildReport(secretary, { domain: 'work', period: 'week' });
+  const facts = await buildReport(secretary, { domain: 'work', period: 'month' });
   assert.ok(facts.lines.length >= 1);
-  const again = await buildReport(secretary, { domain: 'work', period: 'week' });
+  const again = await buildReport(secretary, { domain: 'work', period: 'month' });
   assert.ok(again.lines[0].length > 0, '重复调用仍返回同一份事实');
   // 事实包必须带上期值与差值，报告之间才可比
-  const week = facts.facts.domains.work.week;
-  assert.ok(week.previous && Number.isFinite(week.deltas.created), '事实必须带上期值与差值');
-  assert.notEqual(week.previous.period, week.period, '上期窗口不能和本期重合');
+  const month = facts.facts.domains.work.month;
+  assert.ok(month.previous && Number.isFinite(month.deltas.created), '事实必须带上期值与差值');
+  assert.notEqual(month.previous.period, month.period, '上期窗口不能和本期重合');
 
-  // 报告里留"下周一件最重要的事"，下一期事实要能把它捞出来对照
+  // 报告里留"下月一件最重要的事"，下一期事实要能把它捞出来对照
   const written = await buildReport(secretary, {
     domain: 'work',
-    period: 'week',
-    markdown: '## 事实\n\n本周完成一件事。\n\n## 下周一件最重要的事\n\n把预算表交财务。',
+    period: 'month',
+    markdown: '## 事实\n\n本月完成一件事。\n\n## 下月一件最重要的事\n\n把预算表交财务。',
   });
   assert.ok(written.written?.[0]?.path);
-  const second = await buildReport(secretary, { domain: 'work', period: 'week', markdown: '# 改写' });
+  const second = await buildReport(secretary, { domain: 'work', period: 'month', markdown: '# 改写' });
   assert.equal(second.written[0].skipped, true, '默认不覆盖已有报告');
 
-  const carry = await buildReport(secretary, { domain: 'work', period: 'week' });
+  const carry = await buildReport(secretary, { domain: 'work', period: 'month' });
   assert.ok(
-    carry.facts.domains.work.week.commitments === null || typeof carry.facts.domains.work.week.commitments?.text === 'string',
+    carry.facts.domains.work.month.commitments === null || typeof carry.facts.domains.work.month.commitments?.text === 'string',
     'commitments 只能是 null 或 {period, from, text}',
   );
-  // 承诺对照的真实链路：上一期（W-1）有报告 → 本期事实带出它的承诺。
-  // 直接把上一期期号的报告写出来，再查一次。
+  // 承诺对照的真实链路：上一期有报告 → 本期事实带出它的承诺。
+  // 直接把上一期的报告写出来，再查一次。
   const { periodWindow } = await import('./lib/report.js');
-  const prevWin = periodWindow('week', new Date(), 1);
-  const prevPath = `报告/工作/周报/work-${prevWin.key}-工作周报.md`;
-  await store.write(prevPath, `# 工作周报 ${prevWin.label}\n\n## 下周一件最重要的事\n\n把预算表交财务。\n`);
-  const carry2 = await buildReport(secretary, { domain: 'work', period: 'week' });
+  const prevWin = periodWindow('month', new Date(), 1);
+  const prevPath = `报告/工作/月报/work-${prevWin.key}-工作月报.md`;
+  await store.write(prevPath, `# 工作月报 ${prevWin.label}\n\n## 下月一件最重要的事\n\n把预算表交财务。\n`);
+  const carry2 = await buildReport(secretary, { domain: 'work', period: 'month' });
   assert.ok(
-    carry2.facts.domains.work.week.commitments?.text?.includes('预算表'),
-    `上一期有报告时，本期事实应带出其承诺，实际 ${JSON.stringify(carry2.facts.domains.work.week.commitments)}`,
+    carry2.facts.domains.work.month.commitments?.text?.includes('预算表'),
+    `上一期有报告时，本期事实应带出其承诺，实际 ${JSON.stringify(carry2.facts.domains.work.month.commitments)}`,
   );
 });
 
@@ -358,7 +360,11 @@ await test('工具 schema：属性上不残留 required，顶层 required 为字
   };
   registerTools(fakeCtx, secretary);
 
-  assert.equal(tools.length, 7, '秘书应注册 7 个工具');
+  assert.equal(tools.length, 8, '秘书应注册 8 个工具（add/update/query/reminders/report/link/schedule/bind）');
+  // 新增的绑定工具必须存在，且 target 只允许三个值
+  const bind = tools.find((t) => t.name === 'secretary_bind');
+  assert.ok(bind, '必须注册 secretary_bind（提醒与报告可分别绑定会话）');
+  assert.ok(bind.parameters.properties.target, 'secretary_bind 应有 target 参数');
 
   const offenders = [];
   for (const { name, parameters: schema } of tools) {

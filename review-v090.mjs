@@ -126,6 +126,31 @@ async function withScheduler(fn, options = {}) {
 
 const wait = () => new Promise((r) => setTimeout(r, 90));
 
+/**
+ * 轮询等待条件成立。
+ *
+ * 为什么不能只用固定 `wait()`：`registerScheduler` 的首个 tick 与定时器 tick 都是
+ * fire-and-forget（生产上本来就该这样），固定睡眠在机器繁忙时不够长——
+ * 连续跑多套测试时 A03/A04 曾偶发失败，纯粹是"90ms 没跑完"，不是业务缺陷。
+ * 轮询到条件成立再断言，同一个用例在任何负载下都给出一致结论。
+ */
+async function waitFor(predicate, message, timeoutMs = 4000) {
+  const started = Date.now();
+  for (;;) {
+    let ok = false;
+    try {
+      ok = await predicate();
+    } catch {
+      ok = false;
+    }
+    if (ok) return true;
+    if (Date.now() - started > timeoutMs) {
+      throw new Error(`等待超时：${message}`);
+    }
+    await new Promise((r) => setTimeout(r, 25));
+  }
+}
+
 /* ============ A01 月末识别 ============ */
 await test('A01 月末识别：10-31/11-30/2027-02-28/2028-02-29 是月末，其它不是', async () => {
   const { isLastDayOfMonth } = await import('./lib/util.js');
@@ -178,12 +203,22 @@ await test('A03 配置仍为 22:00 通用窗口时，月报在 20:00 就投递',
     async ({ store: s2, tick }) => {
       await s2.writeJson(FILES.schedule, { reportWindow: { start: '22:00', end: '06:00' } });
       fakeClock = new Date(2026, 9, 31, 20, 1, 0);
-      await tick();
-      await wait();
-      const reportTasks = created.filter((c) => String(c.request.prompt || '').includes('period="month"'));
+      /**
+       * 投递是 fire-and-forget（tick 内部 await，但首 tick 与定时器 tick 不等待），
+       * 所以必须**轮询到任务真的出现**再断言，不能靠固定睡眠。
+       */
+      await waitFor(
+        () =>
+          created.some(
+            (c) => c.request.prompt && c.request.prompt.includes('secretary_report') && String(c.request.prompt).includes('period="month"'),
+          ),
+        '月报任务应在 20:01 被投递（不等 22:00）',
+      );
+      const mine = created.filter((c) => c.request.prompt && c.request.prompt.includes('secretary_report'));
+      const reportTasks = mine.filter((c) => String(c.request.prompt).includes('period="month"'));
       assert.ok(
         reportTasks.length >= 1,
-        `月报应在 20:01 投递（不等 22:00），实际任务：${created.map((c) => c.request.title).join(' / ')}`,
+        `月报应在 20:01 投递（不等 22:00），本轮任务：${mine.map((c) => c.request.title).join(' / ') || '无'}`,
       );
     },
     { clock: new Date(2026, 9, 31, 9, 0, 0) },
@@ -196,8 +231,11 @@ await test('A04/A05 月末 20:00 未启动，20:30 或次月启动都不自动�
   // 关键：进程启动时**已经是 20:30**（错过了 20:00 的计划时刻）
   await withScheduler(
     async ({ store: s2, tick }) => {
-      await tick();
-      await wait();
+      // 轮询到"错过"被记录，而不是固定睡眠后直接断言
+      await waitFor(async () => {
+        const state = await s2.readJson(FILES.state, {});
+        return (state.missedReports ?? []).some((x) => x.key === '2026-10');
+      }, '20:30 启动应记录 2026-10 已错过');
       let state = await s2.readJson(FILES.state, {});
       assert.equal((state.pendingReports ?? []).length, 0, '20:30 启动不得补执行已错过的月报');
       assert.ok(
@@ -258,6 +296,7 @@ await test('A07 手动生成 2026-09 月报时，上期事实与上期承诺都�
 await test('A08 月末当天在办/逾期统计正确（上海时区边界不误判历史）', async () => {
   const { secretary: sec4 } = await fresh();
   await sec4.addRecord({ domain: 'work', text: '月末统计事项', title: '月末统计', fields: { deadline: '2026-10-20' } });
+  // 当前周期的各类报告都必须给出实数，不能因 UTC/本地日期差异被判成历史
   for (const [label, day] of [
     ['月末 10-31', new Date(2026, 9, 31, 20, 0, 0)],
     ['周日 10-25', new Date(2026, 9, 25, 12, 0, 0)],
@@ -265,13 +304,15 @@ await test('A08 月末当天在办/逾期统计正确（上海时区边界不误
   ]) {
     const facts = await buildFacts(sec4, { now: day });
     const w = facts.domains.work;
-    const which = label.includes('周日') ? w.week : w.month;
-    assert.notEqual(which.open, null, `${label} 的 open 不能是 null`);
-    assert.equal(typeof which.open, 'number', `${label} open 应为数字`);
-    assert.notEqual(which.overdue, null, `${label} 的 overdue 不能是 null`);
+    for (const p of ['month', 'quarter', 'half', 'year']) {
+      const period = w[p];
+      assert.notEqual(period.open, null, `${label} ${p} 的 open 不能是 null`);
+      assert.equal(typeof period.open, 'number', `${label} ${p} open 应为数字`);
+      assert.notEqual(period.overdue, null, `${label} ${p} 的 overdue 不能是 null`);
+    }
   }
-  // 未来周期：open/overdue 仍应为 null（不可预知）
-  const future = await buildFacts(sec4, { now: new Date(2026, 9, 15) , key: '2026-12' });
+  // 历史与未来周期：open/overdue 应为 null（不可还原/不可预知）
+  const future = await buildFacts(sec4, { now: new Date(2026, 9, 15), key: '2026-12', period: 'month' });
   const m = future.domains.work.month;
   assert.equal(m.open, null, '未来周期的 open 应为 null');
   assert.equal(m.overdue, null, '未来周期的 overdue 应为 null');
@@ -366,17 +407,21 @@ await test('A14 投递失败保留原因并最终标为 gave_up，不伪装为�
     await withScheduler(
       async ({ store: s2, tick }) => {
         fakeClock = new Date(2026, 9, 31, 20, 5, 0);
-        await tick();
-        await wait();
-        await tick();
-        await wait();
+        // registerScheduler 的首 tick 是 fire-and-forget，可能与这里的 tick 交错，
+        // 导致 attempts 累加次数不定。所以不假设次数，而是**反复 tick 直到进入终态**。
+        let item = null;
+        for (let i = 0; i < 6; i += 1) {
+          await tick();
+          await wait();
+          const state = await s2.readJson(FILES.state, {});
+          item = (state.pendingReports ?? []).find((x) => x.key === '2026-10');
+          if (item && item.status === 'gave_up') break;
+        }
         const state = await s2.readJson(FILES.state, {});
-        const item = (state.pendingReports ?? []).find((x) => x.key === '2026-10');
-        assert.ok(item, '失败条目应保留');
+        assert.ok(item, '失败条目应保留（不能静默丢弃）');
         assert.equal(item.status, 'gave_up', `多次失败应标为 gave_up，实际 ${item.status}`);
         assert.ok(item.failedAt, '应保留失败时间');
         assert.ok(item.attempts >= 4, `应记录尝试次数，实际 ${item.attempts}`);
-        // 决不能被标记成完成
         assert.ok(!(state.completedReports ?? []).some((x) => x.key === '2026-10'), '失败不得标为完成');
       },
       {

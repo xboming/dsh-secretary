@@ -100,18 +100,23 @@ await test('#4 灵感转创作可用且双向标注（须带期限）', async ()
 
 /* ---------- #5 isDue 已实现（报告排队不再抛异常） ---------- */
 
-await test('#5 周期判定：周一 = 周报到期，1 号 = 月报到期', async () => {
-  const { registerScheduler } = await import('./lib/schedule.js');
-  void registerScheduler;
-  // 直接验证 periodWindow 与日期语义（isDue 在 schedule 内部，此处用等价断言）
-  const monday = new Date(2026, 10, 2);
-  assert.equal(monday.getDay(), 1, '2026-11-02 应为周一');
-  const win = periodWindow('week', monday);
-  assert.match(win.key, /^\d{4}-W\d{2}$/);
-  const first = new Date(2026, 11, 1);
-  assert.equal(first.getDate(), 1);
-  const mWin = periodWindow('month', first);
-  assert.equal(mWin.key, '2026-12');
+await test('#5 周期判定：四类周期各自覆盖正确的月份区间', async () => {
+  // 2026-11-02 属于 2026-11 / 2026-Q4 / 2026-H2 / 2026
+  const d = new Date(2026, 10, 2);
+  assert.equal(periodWindow('month', d).key, '2026-11');
+  assert.equal(periodWindow('quarter', d).key, '2026-Q4');
+  assert.equal(periodWindow('half', d).key, '2026-H2');
+  assert.equal(periodWindow('year', d).key, '2026');
+  // 季度边界：3 月属 Q1，4 月属 Q2
+  assert.equal(periodWindow('quarter', new Date(2026, 2, 31)).key, '2026-Q1');
+  assert.equal(periodWindow('quarter', new Date(2026, 3, 1)).key, '2026-Q2');
+  // 半年度边界：6 月属 H1，7 月属 H2
+  assert.equal(periodWindow('half', new Date(2026, 5, 30)).key, '2026-H1');
+  assert.equal(periodWindow('half', new Date(2026, 6, 1)).key, '2026-H2');
+  // 上一期
+  assert.equal(periodWindow('quarter', d, 1).key, '2026-Q3');
+  assert.equal(periodWindow('half', d, 1).key, '2026-H1');
+  assert.equal(periodWindow('year', d, 1).key, '2025');
 });
 
 /* ---------- #7 重开必须离开 done ---------- */
@@ -191,14 +196,14 @@ await test('#10 沉睡先全量去重再截断；查询不消耗状态', async (
 /* ---------- #11 报告可指定周期 ---------- */
 
 await test('#11 报告可生成指定周期（上周/上月）', async () => {
-  const facts = await buildReport(secretary, { period: 'week', key: '2026-W42' });
-  assert.equal(facts.key, '2026-W42', '必须按传入 key 生成');
+  const facts = await buildReport(secretary, { period: 'month', key: '2026-10' });
+  assert.equal(facts.key, '2026-10', '必须按传入 key 生成');
   const mfacts = await buildReport(secretary, { period: 'month', key: '2026-09' });
   assert.equal(mfacts.key, '2026-09');
   // 非法 key：windowFor 返回 null，buildReport 必须显式报错而不是静默回落到当前周期
-  assert.equal(windowFor('week', 'bad-key'), null, 'windowFor 对非法 key 应返回 null');
+  assert.equal(windowFor('month', 'bad-key'), null, 'windowFor 对非法 key 应返回 null');
   await assert.rejects(
-    () => buildReport(secretary, { period: 'week', key: 'bad-key' }),
+    () => buildReport(secretary, { period: 'month', key: 'bad-key' }),
     /格式不对/,
     '非法 key 必须报错',
   );
@@ -213,19 +218,19 @@ await test('#12 3-31 的上一月是 2 月，不是本月', async () => {
 });
 
 await test('#12 上期不可还原时 delta 标为 null，不给假 0', async () => {
-  const facts = await buildReport(secretary, { period: 'week', domain: 'work' });
-  const week = facts.facts.domains.work.week;
-  assert.ok('previous' in week);
+  const facts = await buildReport(secretary, { period: 'month', domain: 'work' });
+  const month = facts.facts.domains.work.month;
+  assert.ok('previous' in month);
   // 历史周期的 open/overdue 应为 null（不可还原），delta 也应是 null
-  if (week.previous.open === null) {
-    assert.equal(week.deltas.open, null, 'open 不可还原时 delta 必须是 null');
+  if (month.previous.open === null) {
+    assert.equal(month.deltas.open, null, 'open 不可还原时 delta 必须是 null');
   }
 });
 
 /* ---------- #13 工具输出无 undefined ---------- */
 
 await test('#13 报告结果不含 undefined 字段且可无损序列化', async () => {
-  const facts = await buildReport(secretary, { period: 'week', domain: 'work' });
+  const facts = await buildReport(secretary, { period: 'month', domain: 'work' });
   const roundTrip = JSON.parse(JSON.stringify(facts));
   assert.deepEqual(roundTrip, facts, '返回值必须可无损 JSON 往返');
   const undef = (obj, prefix = '') => {

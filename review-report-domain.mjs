@@ -33,7 +33,7 @@ await secretary.addRecord({ domain: 'work', text: '报告域测试工作', title
 await secretary.addRecord({ domain: 'creation', text: '报告域测试创作', title: '创作条目', fields: { deadline: '2026-12-31' } });
 
 await test('#11 不带 domain 时，各域事实包分别落到各自目录', async () => {
-  const result = await buildReport(secretary, { period: 'week', key: '2026-W43' });
+  const result = await buildReport(secretary, { period: 'month', key: '2026-10' });
   assert.ok(Array.isArray(result.factsPaths), '应返回 factsPaths 列表');
   assert.ok(result.factsPaths.length >= 2, `至少两个域，实际 ${result.factsPaths.length}`);
   for (const item of result.factsPaths) {
@@ -51,14 +51,14 @@ await test('#11 不带 domain 时，各域事实包分别落到各自目录', as
 
 await test('#11 多域传同一篇 markdown 被明确拒绝（不混域）', async () => {
   await assert.rejects(
-    () => buildReport(secretary, { period: 'week', markdown: '# 一份跨域报告', force: true }),
+    () => buildReport(secretary, { period: 'month', markdown: '# 一份跨域报告', force: true }),
     /不能共用同一篇报告正文/,
     '多域共用正文必须报错',
   );
 });
 
 await test('#11 单域写报告只落在该域目录', async () => {
-  const result = await buildReport(secretary, { period: 'week', domain: 'work', markdown: '# 工作周报\n\n本周完成一件事。', force: true });
+  const result = await buildReport(secretary, { period: 'month', domain: 'work', markdown: '# 工作月报\n\n本月完成一件事。', force: true });
   assert.ok(result.path, '应返回写入路径');
   assert.ok(result.path.includes('工作'), `工作域报告路径不对：${result.path}`);
   assert.ok(!result.path.includes('创作'), '不能写进创作域');
@@ -67,7 +67,7 @@ await test('#11 单域写报告只落在该域目录', async () => {
 });
 
 await test('#11 逐域写报告时，两域文件内容互不相同', async () => {
-  await buildReport(secretary, { period: 'week', domain: 'creation', markdown: '# 创作周报\n\n本周推进了章节。', force: true });
+  await buildReport(secretary, { period: 'month', domain: 'creation', markdown: '# 创作月报\n\n本月推进了章节。', force: true });
   const files = await store.listFiles('报告', (p) => p.endsWith('.md'));
   const workFile = files.find((p) => p.includes('工作'));
   const creationFile = files.find((p) => p.includes('创作'));
@@ -75,8 +75,8 @@ await test('#11 逐域写报告时，两域文件内容互不相同', async () =
   const workText = await store.readText(workFile);
   const creationText = await store.readText(creationFile);
   assert.notEqual(workText, creationText, '两个域报告内容必须各自独立');
-  assert.ok(workText.includes('工作周报'), '工作报告含工作内容');
-  assert.ok(creationText.includes('创作周报'), '创作报告含创作内容');
+  assert.ok(workText.includes('工作月报'), '工作报告含工作内容');
+  assert.ok(creationText.includes('创作月报'), '创作报告含创作内容');
 });
 
 await test('月报 20:00 才算到期（19:59 不算，20:00 算）', async () => {

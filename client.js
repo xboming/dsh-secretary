@@ -28,26 +28,45 @@ window.__ModuleLoader__.load({
   --zw-warn-soft:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 13%,var(--dsw-alias-bg-layer-1));
   --zw-success:var(--dsw-alias-state-success-primary);
   --zw-focus:var(--dsw-alias-brand-primary);
+  /* ---- 状态文字在柔和底色上的强化版本（6.2 对比度） ----
+     柔和底色（*-soft）会抬高背景亮度，纯品牌/警告色压在其上达不到 4.5:1
+     （浅色主题实测：今日到期 4.30、临期 3.97）。把状态色向**主文字色**混一档：
+     浅色主题的主文字近黑 → 状态色变深；深色主题的主文字近白 → 状态色变浅。
+     同一个公式在两套主题下都提高对比度，不必写两套色值，也不靠硬编码 hex。 */
+  --zw-accent-on-soft:color-mix(in srgb,var(--dsw-alias-brand-primary) 74%,var(--dsw-alias-label-primary));
+  --zw-warning-on-soft:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 74%,var(--dsw-alias-label-primary));
+  --zw-danger-on-soft:color-mix(in srgb,var(--dsw-alias-state-error-primary) 74%,var(--dsw-alias-label-primary));
   --zw-font:"Segoe UI","Microsoft YaHei UI","PingFang SC",sans-serif;
 }
 `;
 
     const CSS = `
-.sct-root{display:flex;flex-direction:column;height:100%;min-height:0;background:var(--dsw-alias-bg-base);color:var(--zw-text);font:14px/1.6 var(--zw-font)}
+/* .sct-root 同时是**布局容器**：容器查询按插件真实可用宽度判定，
+   而不是按浏览器窗口。宿主侧栏展开、面板拖动缩放、右侧栏打开时，
+   窗口可能仍很宽，但插件只有 800px —— 断点必须跟着容器走（U02）。 */
+.sct-root{display:flex;flex-direction:column;height:100%;min-height:0;background:var(--dsw-alias-bg-base);color:var(--zw-text);font:14px/1.6 var(--zw-font);container-type:inline-size;container-name:sct}
 .sct-root *{box-sizing:border-box}
-.sct-root button{font:inherit;cursor:pointer;color:inherit;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:6px;min-height:36px;padding:7px 13px;transition:background .13s,border-color .13s}
-.sct-root button:hover{background:var(--zw-hover)}
-.sct-root button:disabled{opacity:.45;cursor:not-allowed}
-.sct-root button.primary{background:var(--zw-accent);border-color:transparent;color:var(--zw-accent-text);font-weight:600}
-.sct-root button.ghost{background:transparent;border-color:transparent;color:var(--zw-muted)}
-.sct-root button.ghost:hover{color:var(--zw-text);background:var(--zw-hover)}
-.sct-root input,.sct-root select{font:inherit;color:inherit;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:6px;padding:8px 12px;max-width:100%}
-.sct-root button:focus-visible,.sct-root input:focus-visible,.sct-root select:focus-visible{outline:2px solid var(--zw-focus);outline-offset:3px}
+/* 基础控件规则用 :where() 把优先级压到 0（U04）。
+   原来 .sct-root button（0,1,1）压过了 .sct-task-title（0,1,0），
+   标题因此长出边框和 7px/13px 内边距、完成按钮被撑成矩形。
+   现在基础规则 0,1,0，专用组件用 .sct-root .sct-x（0,2,0）稳定覆盖，
+   不需要任何 !important。 */
+.sct-root :where(button){font:inherit;cursor:pointer;color:inherit;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:6px;min-height:36px;padding:7px 13px;transition:background .13s,border-color .13s}
+.sct-root :where(button:hover){background:var(--zw-hover)}
+.sct-root :where(button:disabled){opacity:.45;cursor:not-allowed}
+.sct-root .primary{background:var(--zw-accent);border-color:transparent;color:var(--zw-accent-text);font-weight:600}
+.sct-root .primary:hover{filter:brightness(1.06)}
+.sct-root .ghost{background:transparent;border-color:transparent;color:var(--zw-muted)}
+.sct-root .ghost:hover{color:var(--zw-text);background:var(--zw-hover)}
+.sct-root input,.sct-root select,.sct-root textarea{font:inherit;color:inherit;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:6px;padding:8px 12px;max-width:100%}
+/* 原生日期/时间控件跟随宿主主题，避免深色页面里蹦出浅色控件（6.2） */
+.sct-root input[type="date"],.sct-root input[type="time"]{color-scheme:light dark}
+.sct-root :where(button:focus-visible),.sct-root input:focus-visible,.sct-root select:focus-visible,.sct-root textarea:focus-visible{outline:2px solid var(--zw-focus);outline-offset:3px}
 .sct-root svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 .sct-root h1,.sct-root h2,.sct-root h3,.sct-root p{margin:0}
 .sct-root .muted{color:var(--zw-muted)}
 .sct-root .small{font-size:12px;line-height:1.5}
-.sct-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;height:88px;padding:0 24px;border-bottom:1px solid var(--zw-line);max-width:1248px;margin:0 auto;width:100%;flex:none}
+.sct-topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:88px;padding:10px 24px;border-bottom:1px solid var(--zw-line);max-width:var(--zw-shell-max,1248px);margin:0 auto;width:100%;flex:none;flex-wrap:wrap}
 .sct-brand{display:flex;align-items:center;gap:12px}
 .sct-brandmark{width:38px;height:38px;color:var(--zw-accent)}
 .sct-brand strong{display:block;font-size:18px;font-weight:600;letter-spacing:1px}
@@ -60,17 +79,30 @@ window.__ModuleLoader__.load({
 .sct-community:hover .sct-community-arrow{color:var(--zw-accent)}
 .sct-sync{font-size:12px;color:var(--zw-muted);white-space:nowrap}
 .sct-scroll{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column}
-.sct-shell{max-width:1248px;margin:0 auto;padding:0 24px;width:100%;flex:1;min-height:0;display:flex;flex-direction:column}
+/* ---- 宽度令牌：数据列宽度与弹层共用同一来源，避免两处各写一套数字 ----
+   必须挂在 :root 上：弹层(dialog)是 body 的子节点，不在 .sct-root 内部，
+   若只定义在 .sct-root 上，弹层读不到这个变量。
+   --zw-data-w / --zw-data-x 由 Panel 里的 ResizeObserver 实时写入真实几何，
+   所以这里的初值只在 JS 还没跑起来的第一帧起作用。 */
+:root{
+  --zw-shell-max:1248px;   /* 内容区最大宽度 */
+  --zw-shell-pad:24px;     /* 内容区左右内边距 */
+  --zw-aside-w:272px;      /* 右栏宽度 */
+  --zw-layout-gap:36px;    /* 主列与右栏间距 */
+  /* 数据列(主列)宽度 = 内容区 - 左右内边距 - 右栏 - 间距。弹层与它严格等宽。 */
+  --zw-data-w:calc(var(--zw-shell-max) - var(--zw-shell-pad) * 2 - var(--zw-aside-w) - var(--zw-layout-gap));
+}
+.sct-shell{max-width:var(--zw-shell-max);margin:0 auto;padding:0 var(--zw-shell-pad);width:100%;flex:1;min-height:0;display:flex;flex-direction:column;min-width:0}
 .sct-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:36px 0 28px;flex:none}
 .sct-eyebrow{font-size:12px;color:var(--zw-muted);letter-spacing:.4px;margin-bottom:10px}
-.sct-hero h1{font-size:30px;line-height:1.35;font-weight:600;letter-spacing:-.6px}
-.sct-summary{margin-top:8px;color:var(--zw-muted);font-size:14px}
+.sct-hero h1{font-size:30px;line-height:1.35;font-weight:600;letter-spacing:-.6px;overflow-wrap:anywhere}
+.sct-summary{margin-top:8px;color:var(--zw-muted);font-size:14px;overflow-wrap:anywhere}
 .sct-hero-side{font-size:12px;color:var(--zw-muted);white-space:nowrap}
-.sct-layout{display:grid;grid-template-columns:minmax(0,1fr) 272px;gap:36px;align-items:stretch;flex:1;min-height:0}
-.sct-main{display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.sct-layout{display:grid;grid-template-columns:minmax(0,1fr) var(--zw-aside-w);gap:var(--zw-layout-gap);align-items:stretch;flex:1;min-height:0;min-width:0}
+.sct-main{display:flex;flex-direction:column;min-height:0;min-width:0;overflow:hidden}
 .sct-main-head{flex:none;display:flex;flex-direction:column;min-width:0}
 .sct-list-scroll{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding-bottom:32px;scrollbar-gutter:stable}
-.sct-aside{display:flex;flex-direction:column;gap:24px;min-height:0;overflow-y:auto;padding-bottom:32px;scrollbar-gutter:stable}
+.sct-aside{display:flex;flex-direction:column;gap:24px;min-height:0;min-width:0;overflow-y:auto;padding-bottom:32px;scrollbar-gutter:stable}
 .sct-capture{display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:10px;padding:10px;margin-bottom:26px}
 .sct-capture:focus-within{border-color:var(--zw-accent)}
 .sct-capture select{border-color:transparent;background:transparent;font-weight:600;min-height:36px;max-width:120px}
@@ -82,36 +114,59 @@ window.__ModuleLoader__.load({
 .sct-capture-confirm label{margin:0;font-size:12.5px;color:var(--zw-muted)}
 .sct-checkline{display:flex;align-items:center;gap:8px;font-size:13px}
 .sct-checkline input{width:auto;padding:0}
-.sct-notch{flex-basis:100%;background:var(--zw-raised);border-radius:6px;padding:10px 12px;font-size:12.5px;color:var(--zw-muted)}
-.sct-tabs{display:flex;gap:20px;border-bottom:1px solid var(--zw-line);margin-bottom:14px}
-.sct-tab{height:44px;padding:0 2px;border:0;border-radius:0;background:transparent;color:var(--zw-muted);font-size:15px;font-weight:500;position:relative}
-.sct-tab:hover{background:transparent;color:var(--zw-text)}
-.sct-tab[aria-selected="true"]{color:var(--zw-text);font-weight:600}
-.sct-tab[aria-selected="true"]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--zw-accent)}
+.sct-notch{flex-basis:100%;background:var(--zw-raised);border-radius:6px;padding:10px 12px;font-size:12.5px;color:var(--zw-muted);overflow-wrap:anywhere}
+.sct-tabs{display:flex;gap:20px;border-bottom:1px solid var(--zw-line);margin-bottom:14px;overflow-x:auto;scrollbar-width:thin}
+/* 页签：样式挂在 .sct-tab 上（U05）。原来只给了 role="tab" 却没给 class，
+   选中下划线选择器 .sct-tab[aria-selected="true"]::after 永远命不中，
+   于是当前页签在视觉上和未选中的一模一样。 */
+.sct-root .sct-tab{position:relative;display:inline-flex;align-items:center;gap:2px;flex:none;height:44px;padding:0 2px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;color:var(--zw-muted);font-size:15px;font-weight:500;transition:color .13s,border-color .13s}
+.sct-root .sct-tab:hover{background:transparent;color:var(--zw-text)}
+.sct-root .sct-tab[aria-selected="true"]{color:var(--zw-text);font-weight:600;border-bottom-color:var(--zw-accent)}
+.sct-root .sct-tab[aria-selected="true"] .sct-count{color:var(--zw-accent);font-weight:600}
 .sct-count{font-size:12px;color:var(--zw-muted);margin-left:5px;font-weight:400;font-variant-numeric:tabular-nums}
 .sct-filter{display:flex;flex-wrap:wrap;gap:3px;margin-bottom:6px}
-.sct-filter button{min-height:34px;padding:5px 11px;font-size:13px;background:transparent;border-color:transparent;color:var(--zw-muted)}
-.sct-filter button:hover{color:var(--zw-text);background:var(--zw-hover)}
-.sct-filter button[aria-pressed="true"]{background:var(--zw-accent-soft);border-color:transparent;color:var(--zw-accent);font-weight:600}
-.sct-section-label{display:flex;justify-content:space-between;align-items:baseline;margin:20px 0 10px;font-size:12px;color:var(--zw-muted);letter-spacing:.3px}
+.sct-root .sct-filter button{min-height:34px;padding:5px 11px;font-size:13px;background:transparent;border:1px solid transparent;color:var(--zw-muted)}
+.sct-root .sct-filter button:hover{color:var(--zw-text);background:var(--zw-hover)}
+/* 选中态不只靠颜色：加粗 + 边框，深浅主题都一眼可分（6.2） */
+.sct-root .sct-filter button[aria-pressed="true"]{background:var(--zw-accent-soft);border-color:var(--zw-accent);color:var(--zw-text);font-weight:600}
+.sct-section-label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:20px 0 10px;font-size:12px;color:var(--zw-muted);letter-spacing:.3px}
 .sct-section-label:first-of-type{margin-top:8px}
 .sct-tasks{display:flex;flex-direction:column;gap:10px}
-.sct-task{display:flex;align-items:flex-start;gap:12px;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:12px;padding:14px 18px;transition:border-color .14s}
+/* 专用控件统一用 .sct-root .sct-x（0,2,0）压过基础规则（0,1,0）——U04。
+   完成控件必须是 24×24 的圆，标题必须是**看起来像文字**的入口：
+   两者都要显式清掉基础规则的 background/border/padding/min-height。 */
+.sct-root .sct-check{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-height:24px;padding:0;margin-top:2px;border-radius:50%;border:1px solid var(--zw-line-strong);background:transparent;color:var(--zw-muted);font-size:12px;line-height:1;position:relative;transition:border-color .13s,background .13s,color .13s}
+/* 未完成的圆圈是**可点的控件边界**，必须达到 3:1（6.2）。
+   用 muted 文字色做描边而不是 border-l2：后者在深色主题下只有 1.9:1。
+   仍保持"未完成 = 弱"的心智，但看得见。 */
+.sct-root .sct-check{border-color:var(--zw-muted)}
+/* 视觉 24px，命中区 44px（透明扩展，符合触控要求且不撑开布局） */
+.sct-root .sct-check::before{content:"";position:absolute;inset:-10px;border-radius:50%}
+.sct-root .sct-check:hover{border-color:var(--zw-accent);color:var(--zw-accent);background:transparent}
+.sct-root .sct-check[data-done="true"]{border-color:var(--zw-success);background:var(--zw-success);color:var(--zw-accent-text)}
+.sct-root .sct-check[data-shape="idea"]{border-color:var(--zw-accent);color:var(--zw-accent)}
+.sct-root .sct-check:focus-visible{outline:2px solid var(--zw-focus);outline-offset:3px}
+.sct-root .sct-task-title{display:block;width:100%;background:none;border:0;padding:1px 2px;margin:-1px -2px;min-height:0;border-radius:4px;text-align:left;font-size:15px;font-weight:600;line-height:1.5;color:var(--zw-text);white-space:normal;overflow-wrap:anywhere}
+.sct-root .sct-task-title:hover{background:var(--zw-hover);color:var(--zw-text)}
+.sct-root .sct-task-title:focus-visible{outline:2px solid var(--zw-focus);outline-offset:2px}
+.sct-task{display:flex;align-items:flex-start;gap:12px;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:12px;padding:14px 18px;transition:border-color .14s;min-width:0}
 .sct-task:hover{border-color:var(--zw-line-strong)}
-.sct-task[data-done="true"]{opacity:.6}
-.sct-check{flex:none;width:24px;height:24px;min-height:24px;padding:0;margin-top:2px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;position:relative}
-.sct-check::before{content:"";position:absolute;inset:-8px}
-.sct-check[data-shape="idea"]{color:var(--zw-accent)}
+/* 已完成行不用整体降透明度：那会让文字掉到 4.5:1 以下（6.2）。
+   改用弱化底色 + 标题删除线，主文字仍是 label-primary。 */
+.sct-task[data-done="true"]{background:var(--zw-raised);border-color:var(--zw-line)}
+.sct-task[data-done="true"] .sct-task-title{text-decoration:line-through;text-decoration-thickness:1px;text-decoration-color:var(--zw-muted)}
 .sct-task-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
-.sct-task-title{background:none;border:0;padding:0;min-height:0;text-align:left;font-size:15px;font-weight:600;line-height:1.5;color:var(--zw-text);white-space:normal;overflow-wrap:anywhere;border-radius:4px}
-.sct-task-title:hover{background:var(--zw-hover)}
 .sct-task-meta{display:flex;flex-wrap:wrap;align-items:center;gap:4px 8px;font-size:12px;color:var(--zw-muted)}
 .sct-status{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;font-size:11.5px;font-weight:500}
-.sct-status[data-kind="danger"]{background:var(--zw-danger-soft);color:var(--zw-danger)}
-.sct-status[data-kind="today"]{background:var(--zw-accent-soft);color:var(--zw-accent);font-weight:600}
-.sct-status[data-kind="warn"]{background:var(--zw-warn-soft);color:var(--zw-warning)}
+/* 状态标签的文字用"柔和底专用"色，保证在 *-soft 底色上也 ≥4.5:1（6.2） */
+.sct-status[data-kind="danger"]{background:var(--zw-danger-soft);color:var(--zw-danger-on-soft)}
+/* 今日到期除颜色外还有文字与加粗，不依赖单一色彩表达（6.2） */
+.sct-status[data-kind="today"]{background:var(--zw-accent-soft);color:var(--zw-accent-on-soft);font-weight:600}
+.sct-status[data-kind="warn"]{background:var(--zw-warn-soft);color:var(--zw-warning-on-soft)}
 .sct-status[data-kind="info"]{background:var(--zw-raised);color:var(--zw-muted)}
-.sct-task-note{font-size:13px;color:var(--zw-muted)}
+/* 中性"距上次更新"标签：只是陈述事实，不用警示色，避免被误读为异常（U06） */
+.sct-status[data-kind="plain"]{background:transparent;color:var(--zw-muted);padding-left:0;font-weight:400}
+.sct-task-note{font-size:13px;color:var(--zw-muted);overflow-wrap:anywhere}
 .sct-task-actions{flex:none;display:flex;gap:2px;align-self:center}
 .sct-task-actions button{min-height:30px;padding:3px 10px;font-size:12.5px}
 .sct-empty{background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:16px;padding:48px 24px;text-align:center}
@@ -140,10 +195,14 @@ window.__ModuleLoader__.load({
 .sct-conn i{width:7px;height:7px;border-radius:50%;background:var(--zw-success)}
 .sct-conn[data-state="lost"] i{background:var(--zw-warning)}
 .sct-conn[data-state="none"] i{background:var(--zw-muted)}
+.sct-conn-target{font-weight:600;color:var(--zw-text)}
+.sct-conn-note{margin:4px 0 2px;font-size:12px;line-height:1.6;color:var(--zw-muted)}
+.sct-conn-warn{margin:6px 0 2px;font-size:12px;line-height:1.6;color:var(--zw-warning)}
 .sct-side-note{font-size:12px;color:var(--zw-muted);margin-top:12px;line-height:1.7}
+.sct-report-list{margin:6px 0 0;padding-left:16px;font-size:12px;line-height:1.7;color:var(--zw-muted)}
+.sct-report-list li{list-style:disc}
 .sct-cal-head{margin-bottom:12px}
 .sct-cal-head h2{font-size:16px;font-weight:600}
-.sct-quiet-note{margin-top:14px;font-size:12px;color:var(--zw-muted)}
 .sct-toolbar{display:flex;gap:8px;align-items:center;margin:4px 0 10px;flex-wrap:wrap}
 .sct-search{position:relative;flex:1;min-width:180px;display:flex;align-items:center}
 .sct-search-icon{position:absolute;left:10px;width:15px;height:15px;color:var(--zw-muted);pointer-events:none;stroke-width:1.8}
@@ -171,39 +230,119 @@ window.__ModuleLoader__.load({
 .sct-d[data-today="true"]{background:var(--zw-accent);color:var(--zw-accent-text);font-weight:700}
 .sct-d[data-due="true"]{box-shadow:inset 0 0 0 1.5px var(--zw-danger);color:var(--zw-danger)}
 .sct-d[data-due="true"][data-today="true"]{color:var(--zw-accent-text);box-shadow:0 0 0 2px var(--zw-accent-soft)}
-.sct-drawer{width:520px;max-width:calc(100% - 32px);background:var(--zw-surface);color:var(--zw-text);border:1px solid var(--zw-line);border-radius:16px;padding:22px;box-shadow:0 20px 70px rgba(0,0,0,.32)}
+.sct-drawer{
+  /* 宽度与数据列严格一致；max-width 只在视口极窄时兜底 */
+  width:var(--zw-data-w);max-width:calc(100% - 32px);
+  /* 左边缘与数据列对齐：dialog 默认居中，这里改成固定定位 + 变量 x 坐标 */
+  position:fixed;
+  left:var(--zw-data-x, 50%);
+  top:50%;
+  margin:0;
+  transform:translateY(-50%);
+  /* 高度必须封顶，否则内容一长就溢出视口、底部看不到（时间轴常常很长） */
+  max-height:min(90vh,900px);
+  display:flex;flex-direction:column;overflow:hidden;
+  background:var(--zw-surface);color:var(--zw-text);
+  border:1px solid var(--zw-line);border-radius:16px;
+  padding:0;box-shadow:0 20px 70px rgba(0,0,0,.32)
+}
+/* 各断点都保持"与数据列左对齐"：--zw-data-x 由 ResizeObserver 实时写入，
+   窄屏下数据列本身就在容器内，左对齐同样成立（实测 16–24px 边距） */
 .sct-drawer::backdrop{background:rgba(0,0,0,.5)}
+/* 头部（标题/元信息/编辑入口）与底部按钮固定，中间正文独立滚动 */
+.sct-drawer-head{flex:none;padding:22px 22px 0}
+.sct-drawer-body{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;padding:0 22px;scrollbar-gutter:stable}
+.sct-drawer-foot{flex:none;padding:14px 22px 20px;border-top:1px solid var(--zw-line);background:var(--zw-surface)}
+/* 简单弹层（改期/设置/转项目）：表单自带内边距，不需要头身脚分工 */
+.sct-drawer-simple{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:22px}
+.sct-drawer-simple footer{margin-top:18px}
 .sct-drawer h2{font-size:20px;font-weight:600;margin:10px 0 6px}
 .sct-drawer section{margin:16px 0;padding-top:14px;border-top:1px solid var(--zw-line)}
+.sct-drawer-body > section:first-child{margin-top:8px;border-top:0;padding-top:0}
 .sct-drawer section h3{font-size:12px;font-weight:600;color:var(--zw-muted);letter-spacing:.4px;margin-bottom:8px}
-.sct-drawer footer{display:flex;justify-content:flex-end;gap:8px;margin-top:18px}
+.sct-drawer footer{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}
 .sct-drawer label{display:block;font-size:12.5px;color:var(--zw-muted);margin:12px 0 6px}
 .sct-drawer input[type="date"],.sct-drawer input[type="time"]{width:100%;padding:9px 12px}
 .sct-notice{background:var(--zw-raised);border-radius:6px;padding:10px 12px;font-size:12px;color:var(--zw-muted);margin-top:14px}
 .sct-error{color:var(--zw-danger);font-size:12.5px;margin-top:10px}
 .sct-tl{display:flex;flex-direction:column;gap:10px}
-.sct-tl-item{padding-left:14px;border-left:2px solid var(--zw-line);font-size:13px}
+/* 单条进展可能很长：允许内部换行，不裁字 */
+.sct-tl-item{padding-left:14px;border-left:2px solid var(--zw-line);font-size:13px;overflow-wrap:anywhere}
 .sct-tl-item b{display:block;font-size:11.5px;color:var(--zw-muted);font-weight:500;margin-bottom:2px}
-.sct-tl-item blockquote{margin:2px 0 0;padding-left:10px;border-left:2px solid var(--zw-accent);color:var(--zw-text);font-size:13px}
+.sct-tl-item blockquote{margin:2px 0 0;padding-left:10px;border-left:2px solid var(--zw-accent);color:var(--zw-text);font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
 .sct-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--zw-surface);border:1px solid var(--zw-line-strong);border-radius:10px;padding:11px 16px;font-size:13px;box-shadow:0 20px 70px rgba(0,0,0,.35);z-index:60}
 @media(prefers-reduced-motion:reduce){.sct-root *{transition:none !important}}
-@media(max-width:1059px){
-  .sct-layout{grid-template-columns:minmax(0,1fr);gap:24px;flex:1;min-height:0}
-  .sct-main{overflow:hidden}
-  .sct-aside{display:grid;grid-template-columns:1fr 1fr;gap:24px;overflow:visible;padding-bottom:0}
-  .sct-aside .sct-side-block:last-child{grid-column:1/-1}
-  .sct-topbar{height:76px}
+
+/* ================= 自适应断点（U02） =================
+   全部用 @container 而不是 @media：断点依据**插件容器的实际宽度**，
+   不是浏览器窗口。宿主侧栏展开、面板拖动缩放、右侧栏打开时，
+   窗口可能还有 1440px，但插件容器只剩 800px —— 用 @media 会继续
+   保持双栏，把主列挤到 444px、操作按钮被裁掉（审查报告实测）。
+
+   断点取自报告 5.2：
+     ≥1060px         弹性主列 + 辅助列
+     860–1059px      紧凑双栏；主区放不下操作就提前切单栏
+     560–859px       主区单栏，辅助区两列跟在后面
+     320–559px       全部单栏，录入/搜索/筛选换行
+   ==================================================== */
+
+/* 860–1159px：缩小辅助列与间距，给主列让出宽度，但仍是双栏 */
+@container sct (max-width:1159px){
+  .sct-root .sct-layout{gap:24px;grid-template-columns:minmax(0,1fr) 240px}
+  .sct-root .sct-topbar{padding:10px 20px}
+  .sct-root .sct-hero{padding:28px 0 22px}
+  .sct-root .sct-hero h1{font-size:26px}
 }
-@media(max-width:720px){
-  .sct-topbar{height:auto;padding:14px 16px;flex-wrap:wrap;gap:8px}
-  .sct-shell{padding:0 16px}
-  .sct-hero{padding:24px 0 20px;flex-direction:column;align-items:flex-start;gap:10px}
-  .sct-hero h1{font-size:24px}
-  .sct-aside{grid-template-columns:1fr}
-  .sct-brand p{display:none}
-  .sct-task{padding:14px 12px}
-  .sct-task-actions{align-self:flex-end}
-  .sct-drawer{padding:18px}
+
+/* <860px：切单栏。辅助区不再吸在右边抢宽度，改为跟在主区之后。 */
+@container sct (max-width:859px){
+  .sct-root .sct-layout{grid-template-columns:minmax(0,1fr);gap:24px}
+  /* 单栏时**整页一个滚动面**：主区不再是内部滚动的小格子，
+     否则 768px 窗口下列表只剩 32–63px（审查报告实测的裁切来源）。
+     做法：外层 .sct-scroll 变成滚动容器，主区与辅助区都自然展开。
+     .sct-shell 必须 flex:none —— 留着 flex:1 会被压回容器高度，
+     溢出又回到子元素身上，等于白改。 */
+  .sct-root .sct-scroll{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
+  .sct-root .sct-shell{flex:none;min-height:0}
+  .sct-root .sct-layout{flex:none;min-height:0;align-items:start}
+  .sct-root .sct-main{overflow:visible;min-height:0}
+  .sct-root .sct-list-scroll{overflow:visible;min-height:0;flex:none;padding-bottom:8px;scrollbar-gutter:auto}
+  .sct-root .sct-aside{display:grid;grid-template-columns:1fr 1fr;gap:20px 24px;overflow:visible;padding-bottom:32px}
+  .sct-root .sct-aside .sct-side-block:last-child{grid-column:1/-1}
+  .sct-root .sct-side-block{padding-bottom:16px}
+  .sct-root .sct-topbar{min-height:76px}
+}
+
+/* <560px：全部单栏，顶栏/录入/搜索/筛选都允许自然换行 */
+@container sct (max-width:559px){
+  .sct-root .sct-topbar{min-height:0;padding:14px 16px;flex-wrap:wrap;gap:10px}
+  .sct-root .sct-top-actions{flex-wrap:wrap;gap:6px}
+  .sct-root .sct-sync{white-space:normal}
+  .sct-root .sct-shell{padding:0 16px}
+  .sct-root{--zw-shell-pad:16px}
+  .sct-root .sct-hero{padding:22px 0 18px;flex-direction:column;align-items:flex-start;gap:10px}
+  .sct-root .sct-hero h1{font-size:23px;line-height:1.3}
+  .sct-root .sct-hero-side{display:none}
+  .sct-root .sct-aside{grid-template-columns:1fr}
+  .sct-root .sct-brand p{display:none}
+  .sct-root .sct-capture{padding:8px;gap:6px}
+  .sct-root .sct-capture select{max-width:100%;flex:1 1 100%}
+  .sct-root .sct-capture input{flex:1 1 100%;min-width:0}
+  .sct-root .sct-primary-btn{flex:1 1 100%}
+  .sct-root .sct-task{padding:12px 12px}
+  .sct-root .sct-task{flex-wrap:wrap}
+  .sct-root .sct-task-actions{align-self:flex-start;flex-basis:100%;justify-content:flex-end;padding-left:36px}
+  .sct-root .sct-toolbar{margin:2px 0 8px}
+  .sct-root .sct-search{flex:1 1 100%;min-width:0}
+  .sct-root .sct-sort{flex:1 1 100%}
+  .sct-root .sct-section-label{flex-wrap:wrap;gap:2px}
+  .sct-root .sct-list-end{flex-direction:column;gap:4px}
+  .sct-root .sct-agenda-item{grid-template-columns:34px minmax(0,1fr)}
+  .sct-root .sct-drawer-head{padding:16px 16px 0}
+  .sct-root .sct-drawer-body{padding:0 16px}
+  .sct-root .sct-drawer-foot{padding:12px 16px 14px}
+  .sct-root .sct-drawer-simple{padding:16px}
+  .sct-root .sct-drawer h2{font-size:18px}
 }
 `;
 
@@ -229,7 +368,9 @@ window.__ModuleLoader__.load({
         'action.promote': '转成创作',
         'tab.pending': '待收',
         'tab.all': '全部记录',
+        'tab.list': '视图切换',
         'filter.user': '用户记录',
+        'filter.label': '记录范围',
         'hero.attention': '把注意力，留给眼前这一件。',
         'hero.calm': '今天，可以从容推进。',
         'hero.firstSub': '从一条记录开始，逐渐看见进展。',
@@ -252,7 +393,6 @@ window.__ModuleLoader__.load({
         'group.revisit': '值得重新看看',
         'group.sleep': '沉睡的灵感',
         'group.idle': '进行中',
-        'group.idleNote': '当前没有逾期、临期、停滞或沉睡提醒，以上是这一范围全部在办记录。',
         'group.open': '进行中',
         'group.count': '{n} 条',
         'status.overdue': '逾期 {n} 天',
@@ -260,6 +400,7 @@ window.__ModuleLoader__.load({
         'status.soon': '剩 {n} 个工作日',
         'status.sleep': '沉睡 {n} 天',
         'status.stale': '停滞 {n} 天',
+        'status.idleDays': '距上次更新 {n} 天',
         'status.done': '已完成',
         'deadline.none': '未设期限',
         'deadline.due': '{d} 截止',
@@ -326,13 +467,27 @@ window.__ModuleLoader__.load({
         'aside.agendaEmpty': '暂无即将到期的事项。',
         'aside.reminders': '提醒与回顾',
         'aside.remindTime': '每日提醒',
-        'aside.reportWindow': '报告处理窗口',
-        'aside.reportNote': '需要完整周报时，在对话中说「帮我整理上周周报」。',
+        'aside.reportSchedule': '报告生成',
+        'aside.reportMonthly': '月报 · 每月最后一天 {t}',
+        'aside.reportQuarterly': '季报 · 季末最后一天 {t}',
+        'aside.reportHalf': '半年报 · 6/12 月末 {t}',
+        'aside.reportYearly': '年报 · 12 月末 {t}',
+        /* B06：这里原来写"报告处理窗口 22:00—06:00"+"需要完整周报时说「帮我整理上周周报」，
+           但后端只接受 month/quarter/half/year，周报根本不存在——照做一定失败。
+           现在只说明真实支持的四类，并写清"错过要手动生成"。 */
+        'aside.reportNote': '四类报告都在各自周期最后一天按上面时间开始生成，生成的是当期数据，不会被夜间窗口推迟。若那一刻 DSH 没开着，之后不会自动补跑——在对话里说「补一份 2026-09 月报」即可手动生成。',
+        'aside.reportMissed': '有 {n} 期错过了自动生成，需要手动补：{k}',
         'aside.calendar': '{y} 年 {m} 月',
         'aside.expand': '展开月历 ＋',
         'aside.collapse': '收起月历 −',
         'aside.calendarMissing': '节假日数据缺失，按周末近似显示',
         'conn.bound': '会话已绑定',
+        'conn.boundTail': '会话已绑定（…{t}）',
+        'conn.bindTail': '…{t}',
+        'conn.reminderTo': '提醒投递到',
+        'conn.reportTo': '报告投递到',
+        'conn.splitNote': '提醒与报告绑在不同会话。要合并到当前会话，说「把提醒和报告都绑到这里」。',
+        'conn.reportBlocked': '报告会先攒成事实包，等你在这个会话里说一句话后自动投递。',
         'conn.lost': '绑定会话已失效（退回文件提醒）',
         'conn.none': '会话未绑定（说句话即绑定）',
         'footer.note': '原话留在时间轴，进展随时可回看。',
@@ -362,7 +517,9 @@ window.__ModuleLoader__.load({
         'action.promote': 'To creation',
         'tab.pending': 'Attention',
         'tab.all': 'All records',
+        'tab.list': 'View switcher',
         'filter.user': 'My records',
+        'filter.label': 'Scope',
         'hero.attention': 'Focus on the one in front of you.',
         'hero.calm': 'A calm day to move things forward.',
         'hero.firstSub': 'Start with one record and watch progress appear.',
@@ -385,7 +542,6 @@ window.__ModuleLoader__.load({
         'group.revisit': 'Worth another look',
         'group.sleep': 'Dormant ideas',
         'group.idle': 'In progress',
-        'group.idleNote': 'Nothing overdue, due soon, stalled or dormant. These are all open records in this scope.',
         'group.open': 'in progress',
         'group.count': '{n} item(s)',
         'status.overdue': 'Overdue {n}d',
@@ -393,6 +549,7 @@ window.__ModuleLoader__.load({
         'status.soon': '{n} workdays left',
         'status.sleep': 'Dormant {n}d',
         'status.stale': 'Stalled {n}d',
+        'status.idleDays': 'Last update {n}d ago',
         'status.done': 'Done',
         'deadline.none': 'No deadline',
         'deadline.due': 'Due {d}',
@@ -459,13 +616,24 @@ window.__ModuleLoader__.load({
         'aside.agendaEmpty': 'Nothing due soon.',
         'aside.reminders': 'Reminders & review',
         'aside.remindTime': 'Daily reminder',
-        'aside.reportWindow': 'Report window',
-        'aside.reportNote': 'For a full weekly report, ask in chat: "summarize last week".',
+        'aside.reportSchedule': 'Report generation',
+        'aside.reportMonthly': 'Monthly · last day {t}',
+        'aside.reportQuarterly': 'Quarterly · quarter-end {t}',
+        'aside.reportHalf': 'Half-year · Jun/Dec end {t}',
+        'aside.reportYearly': 'Yearly · Dec end {t}',
+        'aside.reportNote': 'All four report types start on the last day of their own period at the time shown, covering that period — they are never pushed to a night window. If DSH is closed at that moment it will not catch up later; ask in chat to regenerate one manually.',
+        'aside.reportMissed': '{n} period(s) missed auto-generation; regenerate manually: {k}',
         'aside.calendar': '{y}/{m}',
         'aside.expand': 'Calendar ＋',
         'aside.collapse': 'Calendar −',
         'aside.calendarMissing': 'Holiday data missing — approximating by weekends',
         'conn.bound': 'Session bound',
+        'conn.boundTail': 'Session bound (…{t})',
+        'conn.bindTail': '…{t}',
+        'conn.reminderTo': 'Reminders to',
+        'conn.reportTo': 'Reports to',
+        'conn.splitNote': 'Reminders and reports go to different sessions. Say "bind both here" to merge them.',
+        'conn.reportBlocked': 'Reports accumulate as fact packs until you speak in a session; then they are delivered.',
         'conn.lost': 'Bound session lost (file reminders only)',
         'conn.none': 'Session not bound (say anything to bind)',
         'footer.note': 'Original words stay in the timeline.',
@@ -677,6 +845,18 @@ window.__ModuleLoader__.load({
       const t = props.t;
       const isIdea = item.domain === 'idea';
       const done = item.kind === 'done';
+      /**
+       * U06：行标签必须与分组、数量、详情用**同一业务含义**。
+       *
+       * 分组早已优先用服务端 `reason`，行标签却还写死 `stallDays >= 5`——
+       * 实测创作条目停滞 6 天、服务端 reason 为 null（该域阈值 10 天），
+       * 待收里不提醒，行上却打"停滞 6 天"的红标，自相矛盾。
+       * 现在：只有服务端判为 `stall` 才用"停滞"警示；
+       * 其余情况给中性的"距上次更新 N 天"，不暗示异常。
+       */
+      const attention = attentionOf(item);
+      const isStalled = !done && attention === 'stall';
+      const isDormant = !done && attention === 'sleep';
       const chips = [];
       if (done) {
         chips.push({ text: t('status.done'), kind: 'info' });
@@ -686,12 +866,13 @@ window.__ModuleLoader__.load({
         chips.push({ text: t('status.today'), kind: 'today' });
       } else if (item.due && item.due.level === 'soon') {
         chips.push({ text: fill(t('status.soon'), item.workingDays), kind: 'warn' });
-      }
-      if (!done && (item.stallDays || 0) >= 5) {
+      } else if (isStalled) {
         chips.push({ text: fill(t('status.stale'), item.stallDays), kind: 'warn' });
-      }
-      if (isIdea && !item.promotedTo && (item.dormantDays || 0) >= 1) {
+      } else if (isDormant) {
         chips.push({ text: fill(t('status.sleep'), item.dormantDays), kind: 'info' });
+      } else if (!done && (item.stallDays || 0) > 0) {
+        // 中性叙述：只是"有段时间没动"，不构成提醒
+        chips.push({ text: fill(t('status.idleDays'), item.stallDays), kind: 'plain' });
       }
       const timeline = item.timeline || [];
       const latest = timeline.length ? timeline[0] : null;
@@ -712,7 +893,11 @@ window.__ModuleLoader__.load({
           'button',
           {
             className: 'sct-check',
+            type: 'button',
             'data-shape': isIdea ? 'idea' : 'task',
+            // 选中态不只靠颜色：done 时 aria-pressed 与勾选符号同时表达（6.2）
+            'data-done': done ? 'true' : 'false',
+            'aria-pressed': done ? 'true' : 'false',
             'aria-label': isIdea ? t('action.view') + '：' + item.title : done ? t('action.reopen') + '：' + item.title : t('action.done') + '：' + item.title,
             onClick: function () {
               if (isIdea) props.onView(item);
@@ -724,16 +909,20 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'sct-task-body' },
-          h('button', { className: 'sct-task-title', onClick: function () { props.onView(item); } }, item.title),
+          h(
+            'button',
+            { className: 'sct-task-title', type: 'button', onClick: function () { props.onView(item); } },
+            item.title,
+          ),
           h('div', { className: 'sct-task-meta' }, meta),
           note ? h('p', { className: 'sct-task-note' }, String(note).slice(0, 90)) : null,
         ),
         h(
           'div',
           { className: 'sct-task-actions' },
-          h('button', { className: 'ghost', onClick: function () { props.onView(item); } }, t('action.view')),
+          h('button', { className: 'ghost', type: 'button', onClick: function () { props.onView(item); } }, t('action.view')),
           !done && !isIdea
-            ? h('button', { className: 'ghost', onClick: function () { props.onReschedule(item); } }, t('action.reschedule'))
+            ? h('button', { className: 'ghost', type: 'button', onClick: function () { props.onReschedule(item); } }, t('action.reschedule'))
             : null,
         ),
       );
@@ -969,29 +1158,31 @@ window.__ModuleLoader__.load({
               : null,
           );
 
+      // 三段式：头部与底部按钮固定，只有正文滚动。
+      // 灵感域没有 footer 按钮（转化入口在正文里），底部就不渲染。
+      const showFooter = !isIdea;
+
       return h(
         Drawer,
         { open: true, onClose: props.onClose, label: item.title },
         h(
           'div',
-          null,
+          { className: 'sct-drawer-head' },
           head,
           h('h2', null, item.title),
           h('div', { className: 'sct-task-meta' }, meta),
-          // 编辑入口：放在 meta 下方，随时可改「下一步 / 分类」
-          edit
-            ? null
-            : h(
-                'div',
-                { className: 'sct-edit-entry' },
-                h('button', { className: 'ghost', type: 'button', onClick: startEdit }, t('action.edit')),
-              ),
+          edit ? null : h('div', { className: 'sct-edit-entry' }, h('button', { className: 'ghost', type: 'button', onClick: startEdit }, t('action.edit'))),
+        ),
+        h(
+          'div',
+          { className: 'sct-drawer-body' },
           nextSection,
           editSection,
           timelineSection,
           notesSection,
-          footer,
+          isIdea ? footer : null,
         ),
+        showFooter ? h('div', { className: 'sct-drawer-foot' }, footer) : null,
       );
     }
 
@@ -1005,6 +1196,7 @@ window.__ModuleLoader__.load({
         h(
           'form',
           {
+            className: 'sct-drawer-simple',
             onSubmit: function (event) {
               event.preventDefault();
               props.onConfirm(state.item, state.date);
@@ -1043,6 +1235,7 @@ window.__ModuleLoader__.load({
         h(
           'form',
           {
+            className: 'sct-drawer-simple',
             onSubmit: function (event) {
               event.preventDefault();
               props.onSave(state.time);
@@ -1085,6 +1278,7 @@ window.__ModuleLoader__.load({
         h(
           'form',
           {
+            className: 'sct-drawer-simple',
             onSubmit: function (event) {
               event.preventDefault();
               props.onConfirm(state.item, state.date, false);
@@ -1198,6 +1392,50 @@ window.__ModuleLoader__.load({
       const toast = toastState[0];
       const setToast = toastState[1];
       const toastTimer = useRef(null);
+      const mainRef = useRef(null);
+      /**
+       * 提交闸门（U01）。useRef 而不是 useState：它只在事件回调里读写，
+       * 不需要触发重渲染；用 state 反而会因为闭包捕获旧值而漏拦。
+       * 按钮 disabled 挡不住 Ctrl/Cmd+Enter 与表单回车，所以三种入口都过这里。
+       */
+      const submittingRef = useRef(false);
+
+      /**
+       * 把数据列的真实几何写进 CSS 变量，让弹层与它**宽度一致且左边缘对齐**。
+       *
+       * 为什么不能只用 CSS calc：数据列是 `minmax(0,1fr)`，它会被容器宽度、
+       * 媒体查询、滚动条等因素共同决定，纯算术在窄屏下必然对不上（实测差 16–172px）。
+       * 这里用 ResizeObserver 跟随真实布局，任何断点都准确。
+       */
+      useEffect(function () {
+        const node = mainRef.current;
+        if (!node) return undefined;
+        // 变量必须写在 documentElement（:root）上：dialog 挂在 body 下，
+        // 不在 .sct-root 内部，写局部变量弹层读不到。
+        const root = document.documentElement;
+        const apply = function () {
+          const rect = node.getBoundingClientRect();
+          const width = Math.round(rect.width);
+          const left = Math.round(rect.left);
+          if (width > 0) root.style.setProperty('--zw-data-w', width + 'px');
+          // 左边缘对齐：dialog 是 fixed 定位，用视口坐标的 left 直接对齐数据列
+          root.style.setProperty('--zw-data-x', left + 'px');
+        };
+        apply();
+        let observer = null;
+        if (typeof ResizeObserver === 'function') {
+          observer = new ResizeObserver(apply);
+          observer.observe(node);
+        } else {
+          window.addEventListener('resize', apply);
+        }
+        // 窗口滚动时数据列的水平位置不变（面板内部滚动），但侧栏折叠等仍会触发 resize
+        window.addEventListener('resize', apply);
+        return function () {
+          if (observer) observer.disconnect();
+          window.removeEventListener('resize', apply);
+        };
+      }, []);
 
       const t = useCallback(function (key) {
         const value = MESSAGES.zh[key];
@@ -1334,36 +1572,81 @@ window.__ModuleLoader__.load({
         [reload, showToast, t],
       );
 
+      /**
+       * 快速录入提交。
+       *
+       * U01：保存请求必须**记住提交时的草稿**，成功回调只能清掉"还是那份草稿"
+       * 的内容。原实现无条件 `setDraft('')`，于是慢响应下用户在等待期间
+       * 输入的第二条会被第一条的成功回调抹掉（复验实测复现）。
+       *
+       * 防重复：`submittingRef` 在请求期间为 true。按钮 disabled 只能挡住点击，
+       * 挡不住 Ctrl/Cmd+Enter 与表单回车，所以三种入口统一在这里拦。
+       */
       const submitQuick = useCallback(
-        async function (extraFields, updateExisting) {
-          const text = draft.trim();
+        async function (extraFields, updateExisting, options) {
+          const opts = options || {};
+          if (submittingRef.current) return;
+          /**
+           * 确认面板（重复/期限）提交时，正文用**发起那次请求时的原文**，
+           * 不用输入框当前内容：用户在确认期间可能已经改了框里的字，
+           * 那时"并入这条/另建"应该针对当初那条，而不是半截新内容。
+           */
+          const text = String(opts.text !== undefined ? opts.text : draft).trim();
+          const submitDomain = opts.domain || domain;
           if (!text) {
             setQuickError(t('quick.empty'));
             return;
           }
+          // 提交瞬间的草稿与域：成功回调据此判断"现在还是不是那一份"
+          const submitted = { text: text, domain: submitDomain };
+          const clearsInput = opts.text === undefined;
+          submittingRef.current = true;
           setQuickBusy(true);
           setQuickError('');
           try {
-            const data = await request('/add', jsonBody({ domain: domain, text: text, fields: extraFields || {}, updateExisting: updateExisting === true }));
+            const body = {
+              domain: submitted.domain,
+              text: text,
+              fields: extraFields || {},
+              updateExisting: updateExisting === true,
+            };
+            // 用户已确认"另建一条"：只跳过去重，不改任何字段（U03）
+            if (opts.createSeparate === true) body.createSeparate = true;
+            const data = await request('/add', jsonBody(body));
             const result = (data && data.result) || {};
             if (result.action === 'need_deadline') {
-              setConfirm({ kind: 'deadline', date: toDay(new Date()) });
-              setQuickBusy(false);
+              setConfirm({ kind: 'deadline', date: toDay(new Date()), text: submitted.text, domain: submitted.domain, fields: extraFields || {} });
               return;
             }
             if (result.action === 'duplicate') {
-              setConfirm({ kind: 'duplicate', id: result.id, title: result.title, reason: result.reason });
-              setQuickBusy(false);
+              // 记住这份草稿与已选字段，后面"并入/另建"都复用它，不再读当前输入框
+              setConfirm({
+                kind: 'duplicate',
+                id: result.id,
+                title: result.title,
+                reason: result.reason,
+                text: submitted.text,
+                domain: submitted.domain,
+                fields: extraFields || {},
+              });
               return;
             }
-            setDraft('');
+            // 只有当前草稿仍是提交时那份（且域没切走）才清空；
+            // 否则说明用户已经在写第二条，绝不能动它。
+            if (clearsInput) {
+              setDraft(function (current) {
+                return current === submitted.text ? '' : current;
+              });
+            }
             setConfirm(null);
-            setQuickBusy(false);
-            showToast(fill(t('quick.saved'), result.id || '', NAMES[result.domain || domain] || ''));
+            showToast(fill(t('quick.saved'), result.id || '', NAMES[result.domain || submitted.domain] || ''));
             await reload();
           } catch (error) {
-            setQuickBusy(false);
+            // 失败保留原文：草稿一个字都不动
             setQuickError(t('quick.errorGeneric') + ' ' + ((error && error.message) || error));
+          } finally {
+            submittingRef.current = false;
+            setQuickBusy(false);
           }
         },
         [draft, domain, reload, showToast, t],
@@ -1515,9 +1798,17 @@ window.__ModuleLoader__.load({
           : snap.lastSuccess
             ? fill(t('footer.updatedAt'), snap.lastSuccess)
             : t('footer.justNow');
+      // 提醒与报告各自独立判定：两个投递目标可以绑在不同会话
       const connectionState = data && data.state
-        ? (data.state.scheduleLost ? 'lost' : data.state.reminderSession ? 'bound' : 'none')
+        ? (data.state.scheduleLost ? 'lost' : data.state.reminder && data.state.reminder.bound ? 'bound' : 'none')
         : 'none';
+      const reportConnState = data && data.state ? (data.state.report && data.state.report.bound ? 'bound' : 'none') : 'none';
+      /** 把绑定信息渲染成一句短标签：已绑定给尾号，否则给"未绑定" */
+      const connectTarget = function (snapData, which) {
+        const info = snapData && snapData.state ? snapData.state[which] : null;
+        if (!info || !info.bound) return t('conn.none');
+        return fill(t('conn.bindTail'), info.tail || '');
+      };
 
       const topbar = h(
         'header',
@@ -1616,6 +1907,7 @@ window.__ModuleLoader__.load({
       }
 
       if (confirm && confirm.kind === 'deadline') {
+        const keep = { text: confirm.text, domain: confirm.domain, fields: confirm.fields || {} };
         captureChildren.push(
           h(
             'div',
@@ -1626,7 +1918,9 @@ window.__ModuleLoader__.load({
               value: confirm.date,
               onChange: function (event) {
                 const value = event.target.value;
-                setConfirm(function (prev) { return { kind: 'deadline', date: value }; });
+                setConfirm(function (prev) {
+                  return { ...prev, kind: 'deadline', date: value };
+                });
               },
             }),
             h(
@@ -1635,7 +1929,9 @@ window.__ModuleLoader__.load({
                 className: 'primary',
                 type: 'button',
                 disabled: quickBusy,
-                onClick: function () { submitQuick({ deadline: confirm.date || toDay(new Date()) }); },
+                onClick: function () {
+                  submitQuick({ ...keep.fields, deadline: confirm.date || toDay(new Date()) }, false, keep);
+                },
               },
               t('action.confirmAdd'),
             ),
@@ -1645,7 +1941,8 @@ window.__ModuleLoader__.load({
               h('input', {
                 type: 'checkbox',
                 onChange: function (event) {
-                  if (event.target.checked) submitQuick({ openEnded: true });
+                  // 明确选择"无期限"：openEnded 只表达期限，不参与去重
+                  if (event.target.checked) submitQuick({ ...keep.fields, openEnded: true }, false, keep);
                 },
               }),
               t('quick.openEnded'),
@@ -1656,13 +1953,38 @@ window.__ModuleLoader__.load({
       }
 
       if (confirm && confirm.kind === 'duplicate') {
+        const keep = { text: confirm.text, domain: confirm.domain, fields: confirm.fields || {} };
         captureChildren.push(
           h(
             'div',
             { key: 'dup', className: 'sct-capture-confirm' },
             h('div', { style: { flexBasis: '100%' } }, h('div', { className: 'sct-notch' }, t('quick.duplicateTitle') + '：' + confirm.title + (confirm.reason ? '（' + confirm.reason + '）' : ''))),
-            h('button', { type: 'button', className: 'primary', disabled: quickBusy, onClick: function () { submitQuick({}, true); } }, t('action.mergeInto')),
-            h('button', { type: 'button', onClick: function () { submitQuick({ openEnded: true }); } }, t('action.createSeparate')),
+            // 并入：把这次内容追加到已有条目的时间轴
+            h(
+              'button',
+              {
+                type: 'button',
+                className: 'primary',
+                disabled: quickBusy,
+                onClick: function () { submitQuick(keep.fields, true, keep); },
+              },
+              t('action.mergeInto'),
+            ),
+            /**
+             * 另建：用 createSeparate 跳过重复判断（U03）。
+             * 原来这里传的是 `{ openEnded: true }`——既绕不过去重（后端照样返回 duplicate），
+             * 又顺手把用户已选的期限抹成"无期限"。现在显式表达"这是另一件事"，
+             * 且**保留原来的 fields**（含 deadline）。
+             */
+            h(
+              'button',
+              {
+                type: 'button',
+                disabled: quickBusy,
+                onClick: function () { submitQuick(keep.fields, false, { ...keep, createSeparate: true }); },
+              },
+              t('action.createSeparate'),
+            ),
             h('button', { type: 'button', className: 'ghost', onClick: function () { setConfirm(null); } }, t('action.cancel')),
           ),
         );
@@ -1727,35 +2049,86 @@ window.__ModuleLoader__.load({
         ),
       );
 
+      /**
+       * 页签（U05）：补齐 role 之外的完整语义。
+       *
+       * 原实现只加了 `role="tab"` 而没有 `.sct-tab` 类，选中下划线选择器
+       * `.sct-tab[aria-selected="true"]::after` 永远命不中——当前页签在视觉上
+       * 和未选中的完全一样；也没有 tab/tabpanel 关联、焦点管理与左右键操作。
+       *
+       * 现在（WAI-ARIA Tabs 手动激活变体）：
+       *   - 每个 tab 有 id 与 aria-controls，列表容器有 id 与 aria-labelledby
+       *   - 只有活动 tab 的 tabIndex 为 0（roving tabindex）
+       *   - ←/→ 移动焦点，Home/End 跳到首尾，Enter/Space 或点击才切换
+       */
+      const TAB_IDS = { pending: 'sct-tab-pending', all: 'sct-tab-all' };
+      const TAB_ORDER = ['pending', 'all'];
+      const tabRefs = useRef({});
+
+      const focusTab = function (key) {
+        const node = tabRefs.current[key];
+        if (node && node.focus) node.focus();
+      };
+
+      const onTabKeyDown = function (event) {
+        const index = TAB_ORDER.indexOf(tab);
+        let nextIndex = null;
+        if (event.key === 'ArrowRight') nextIndex = (index + 1) % TAB_ORDER.length;
+        else if (event.key === 'ArrowLeft') nextIndex = (index - 1 + TAB_ORDER.length) % TAB_ORDER.length;
+        else if (event.key === 'Home') nextIndex = 0;
+        else if (event.key === 'End') nextIndex = TAB_ORDER.length - 1;
+        else if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          return;
+        }
+        if (nextIndex === null) return;
+        event.preventDefault();
+        const key = TAB_ORDER[nextIndex];
+        setTab(key);
+        focusTab(key);
+      };
+
+      const makeTab = function (key, label, count) {
+        const selected = tab === key;
+        return h(
+          'button',
+          {
+            key: key,
+            ref: function (node) { tabRefs.current[key] = node; },
+            type: 'button',
+            role: 'tab',
+            id: TAB_IDS[key],
+            className: 'sct-tab',
+            'aria-selected': selected ? 'true' : 'false',
+            'aria-controls': 'sct-tabpanel',
+            tabIndex: selected ? 0 : -1,
+            onKeyDown: onTabKeyDown,
+            onClick: function () { setTab(key); },
+          },
+          label,
+          h('span', { className: 'sct-count' }, String(count)),
+        );
+      };
+
       const tabs = h(
         'div',
-        { className: 'sct-tabs', role: 'tablist' },
-        h(
-          'button',
-          { role: 'tab', 'aria-selected': tab === 'pending' ? 'true' : 'false', onClick: function () { setTab('pending'); } },
-          t('tab.pending'),
-          h('span', { className: 'sct-count' }, String(pendingCount)),
-        ),
-        h(
-          'button',
-          { role: 'tab', 'aria-selected': tab === 'all' ? 'true' : 'false', onClick: function () { setTab('all'); } },
-          t('tab.all'),
-          h('span', { className: 'sct-count' }, String(totalCount)),
-        ),
+        { className: 'sct-tabs', role: 'tablist', 'aria-label': t('tab.list') },
+        makeTab('pending', t('tab.pending'), pendingCount),
+        makeTab('all', t('tab.all'), totalCount),
       );
 
       const filter = h(
         'div',
-        { className: 'sct-filter' },
+        { className: 'sct-filter', role: 'group', 'aria-label': t('filter.label') },
         h(
           'button',
-          { 'aria-pressed': scope === 'user' ? 'true' : 'false', onClick: function () { setScope('user'); } },
+          { type: 'button', 'aria-pressed': scope === 'user' ? 'true' : 'false', onClick: function () { setScope('user'); } },
           t('filter.user'),
         ),
         domains.map(function (d) {
           return h(
             'button',
-            { key: d.id, 'aria-pressed': scope === d.id ? 'true' : 'false', onClick: function () { setScope(d.id); } },
+            { key: d.id, type: 'button', 'aria-pressed': scope === d.id ? 'true' : 'false', onClick: function () { setScope(d.id); } },
             d.name,
           );
         }),
@@ -1857,7 +2230,6 @@ window.__ModuleLoader__.load({
                 });
               }),
             ),
-            h('p', { className: 'sct-quiet-note' }, t('group.idleNote')),
           );
         } else {
           listContent = h(
@@ -1910,11 +2282,18 @@ window.__ModuleLoader__.load({
 
       const main = h(
         'main',
-        { className: 'sct-main' },
+        { className: 'sct-main', ref: mainRef },
         h('div', { className: 'sct-main-head' }, capture, tabs, filter, toolbar),
         h(
           'div',
-          { className: 'sct-list-scroll' },
+          {
+            className: 'sct-list-scroll',
+            // tabpanel：与活动页签通过 aria-labelledby 关联（U05）
+            id: 'sct-tabpanel',
+            role: 'tabpanel',
+            tabIndex: -1,
+            'aria-labelledby': TAB_IDS[tab],
+          },
           listContent,
           h(
             'footer',
@@ -1951,28 +2330,48 @@ window.__ModuleLoader__.load({
             h('span', { className: 'muted' }, t('aside.remindTime')),
             h('span', null, (data && data.schedule && data.schedule.reminderAt) || '12:00'),
           ),
+          // 两个投递目标分别展示：提醒与报告可以各自绑在不同会话
           h(
             'div',
             { className: 'sct-conn', 'data-state': connectionState },
             h('i', null),
-            h(
-              'span',
-              null,
-              connectionState === 'bound' ? t('conn.bound') : connectionState === 'lost' ? t('conn.lost') : t('conn.none'),
-            ),
+            h('span', null, t('conn.reminderTo')),
+            h('b', { className: 'sct-conn-target' }, connectTarget(data, 'reminder')),
           ),
           h(
             'div',
-            { className: 'sct-side-line' },
-            h('span', { className: 'muted' }, t('aside.reportWindow')),
-            h(
-              'span',
-              null,
-              data && data.schedule && data.schedule.reportWindow
-                ? data.schedule.reportWindow.start + '—' + data.schedule.reportWindow.end
-                : '—',
-            ),
+            { className: 'sct-conn', 'data-state': reportConnState },
+            h('i', null),
+            h('span', null, t('conn.reportTo')),
+            h('b', { className: 'sct-conn-target' }, connectTarget(data, 'report')),
           ),
+          data && data.state && data.state.sameSession ? null : h('p', { className: 'sct-conn-note' }, t('conn.splitNote')),
+          // 未绑定/失效时明确告诉用户：报告会停在这里等绑定
+          connectionState !== 'bound' || reportConnState !== 'bound' ? h('p', { className: 'sct-conn-warn' }, t('conn.reportBlocked')) : null,
+          /**
+           * B06：这里原来显示"报告处理窗口 22:00—06:00"，与真实调度不符——
+           * 四类报告都在各自周期最后一天的设定时刻直接投递，**不受**夜间窗口推迟。
+           * 现在改为逐条列出真实生成时间，与 系统/调度.json 完全一致。
+           */
+          h(
+            'div',
+            { className: 'sct-side-line' },
+            h('span', { className: 'muted' }, t('aside.reportSchedule')),
+            h('span', null, (data && data.schedule && data.schedule.monthlyAt) || '20:00'),
+          ),
+          h(
+            'ul',
+            { className: 'sct-report-list' },
+            h('li', null, fill(t('aside.reportMonthly'), (data && data.schedule && data.schedule.monthlyAt) || '20:00')),
+            h('li', null, fill(t('aside.reportQuarterly'), (data && data.schedule && data.schedule.quarterlyAt) || '20:00')),
+            h('li', null, fill(t('aside.reportHalf'), (data && data.schedule && data.schedule.halfAt) || '20:00')),
+            h('li', null, fill(t('aside.reportYearly'), (data && data.schedule && data.schedule.yearlyAt) || '20:00')),
+          ),
+          /* 错过的周期必须说出来：不自动补执行是规则，但"错过"不能悄悄消失。
+             B06 同时要求"任务已提交"不能显示成"报告已生成"，这里只报事实。 */
+          data && data.state && data.state.missedReports
+            ? h('p', { className: 'sct-conn-warn' }, fill(t('aside.reportMissed'), data.state.missedReports, (data.state.missedKeys || []).join('、')))
+            : null,
           h('p', { className: 'sct-side-note' }, t('aside.reportNote')),
         ),
         h(
