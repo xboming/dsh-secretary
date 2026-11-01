@@ -648,7 +648,17 @@ window.__ModuleLoader__.load({
  .sct-dialog-detail .sct-drawer-body{padding:0 20px}
  .sct-dialog-detail .sct-drawer-foot{padding:14px 20px}
 }
-@media(max-width:559px){
+/**
+ * 窄屏下抽屉弹层的尺寸微调。
+ *
+ * 这里原本用了视口宽度媒体查询（max-width 断点），**违反 U02**：
+ * 断点必须跟随**插件容器的实际宽度**，不能用视口宽度。
+ * 后果：窗口 1440px、但插件容器只有 560px 时（侧栏展开、分栏布局），
+ * 视口查询不触发，弹层不会收窄，会溢出容器。
+ *
+ * 同文件其它窄屏断点全是 @container，只有这一处漏了。
+ */
+@container sct (max-width:559px){
  .sct-root .sct-dialog-detail,.sct-root .sct-dialog-done{max-width:calc(100vw - 20px);max-height:92dvh;border-radius:12px}
  .sct-done-body{padding:22px 18px}
  .sct-dialog-done .sct-done-footer{padding:14px 18px}
