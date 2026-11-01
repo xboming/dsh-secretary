@@ -7,11 +7,73 @@ window.__ModuleLoader__.load({
 
     const NS = 'dsh-secretary';
     const API = '/dsh-secretary/api';
+    const THEME_KEY = NS + ':theme';
+    const validTheme = (value) => ['light', 'dark', 'system'].includes(value) ? value : 'system';
 
-    const NAMES = { work: '工作', creation: '创作', idea: '灵感', assistant: '助手' };
+    function useTheme() {
+      const [theme, setTheme] = useState(function () {
+        try { return validTheme(window.localStorage.getItem(THEME_KEY)); } catch { return 'system'; }
+      });
+      const [systemDark, setSystemDark] = useState(function () {
+        return Boolean(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      });
+      useEffect(function () {
+        if (!window.matchMedia) return;
+        const media = window.matchMedia('(prefers-color-scheme: dark)');
+        const update = () => setSystemDark(media.matches);
+        update();
+        media.addEventListener('change', update);
+        return () => media.removeEventListener('change', update);
+      }, []);
+      useEffect(function () {
+        const sync = (event) => {
+          if (event.key === THEME_KEY || event.key === null) setTheme(validTheme(event.newValue));
+        };
+        window.addEventListener('storage', sync);
+        return () => window.removeEventListener('storage', sync);
+      }, []);
+      function choose(value) {
+        const next = validTheme(value);
+        setTheme(next);
+        try { window.localStorage.setItem(THEME_KEY, next); } catch { /* Session-only when storage is unavailable. */ }
+      }
+      return { theme, choose, resolved: theme === 'system' ? (systemDark ? 'dark' : 'light') : theme };
+    }
+
+    /**
+     * 域中文名兜底表。
+     *
+     * **加新域必须同步这里**：它写死了域 id → 中文名，
+     * 快照里的 `domainName` 只在条目视图里有，列表行的域标签用的是这张表。
+     * 漏了的表现是面板上直接显示英文 id（`sales · S-2026-001`），
+     * 不报错、不影响功能，但界面看着像没做完。
+     */
+    const NAMES = {
+      // work 显示为「事务」：它是"不是商机的事"，不是"所有工作"。
+      // 之前叫"工作"时，用户实际的工作八成落在销售域，记东西要反复纠结放哪。
+      work: '事务',
+      sales: '销售',
+      implement: '实施',
+      visit: '拜访',
+      creation: '创作',
+      idea: '灵感',
+      assistant: '助手',
+    };
 
     const TOKEN_CSS = `
 .sct-root{
+  color-scheme:light;
+  --dsw-alias-bg-base:#f3f5f9;
+  --dsw-alias-bg-layer-1:#ffffff;
+  --dsw-alias-bg-layer-2:#eef2f8;
+  --dsw-alias-border-l1:#dfe5ee;
+  --dsw-alias-border-l2:#aab7ca;
+  --dsw-alias-label-primary:#202e46;
+  --dsw-alias-label-secondary:#5d6b81;
+  --dsw-alias-brand-primary:#345fc4;
+  --dsw-alias-state-error-primary:#b3303c;
+  --dsw-alias-state-warn-primary:#876015;
+  --dsw-alias-state-success-primary:#287454;
   --zw-surface:var(--dsw-alias-bg-layer-1);
   --zw-raised:var(--dsw-alias-bg-layer-2);
   --zw-hover:color-mix(in srgb,var(--dsw-alias-label-primary) 5%,transparent);
@@ -20,7 +82,7 @@ window.__ModuleLoader__.load({
   --zw-text:var(--dsw-alias-label-primary);
   --zw-muted:var(--dsw-alias-label-secondary);
   --zw-accent:var(--dsw-alias-brand-primary);
-  --zw-accent-text:var(--dsw-alias-bg-base);
+  --zw-accent-text:#ffffff;
   --zw-accent-soft:color-mix(in srgb,var(--dsw-alias-brand-primary) 14%,var(--dsw-alias-bg-layer-1));
   --zw-danger:var(--dsw-alias-state-error-primary);
   --zw-danger-soft:color-mix(in srgb,var(--dsw-alias-state-error-primary) 13%,var(--dsw-alias-bg-layer-1));
@@ -37,6 +99,21 @@ window.__ModuleLoader__.load({
   --zw-warning-on-soft:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 74%,var(--dsw-alias-label-primary));
   --zw-danger-on-soft:color-mix(in srgb,var(--dsw-alias-state-error-primary) 74%,var(--dsw-alias-label-primary));
   --zw-font:"Segoe UI","Microsoft YaHei UI","PingFang SC",sans-serif;
+}
+.sct-root[data-theme="dark"]{
+  color-scheme:dark;
+  --dsw-alias-bg-base:#141b29;
+  --dsw-alias-bg-layer-1:#1c2637;
+  --dsw-alias-bg-layer-2:#273348;
+  --dsw-alias-border-l1:#35435a;
+  --dsw-alias-border-l2:#60728c;
+  --dsw-alias-label-primary:#e8eef9;
+  --dsw-alias-label-secondary:#aab9ce;
+  --dsw-alias-brand-primary:#a9c3ff;
+  --dsw-alias-state-error-primary:#ff9a9e;
+  --dsw-alias-state-warn-primary:#e6c477;
+  --dsw-alias-state-success-primary:#8ed5b1;
+  --zw-accent-text:#172b52;
 }
 `;
 
@@ -60,7 +137,7 @@ window.__ModuleLoader__.load({
 .sct-root .ghost:hover{color:var(--zw-text);background:var(--zw-hover)}
 .sct-root input,.sct-root select,.sct-root textarea{font:inherit;color:inherit;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:6px;padding:8px 12px;max-width:100%}
 /* 原生日期/时间控件跟随宿主主题，避免深色页面里蹦出浅色控件（6.2） */
-.sct-root input[type="date"],.sct-root input[type="time"]{color-scheme:light dark}
+.sct-root input[type="date"],.sct-root input[type="time"]{color-scheme:inherit}
 .sct-root :where(button:focus-visible),.sct-root input:focus-visible,.sct-root select:focus-visible,.sct-root textarea:focus-visible{outline:2px solid var(--zw-focus);outline-offset:3px}
 .sct-root svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
 .sct-root h1,.sct-root h2,.sct-root h3,.sct-root p{margin:0}
@@ -129,6 +206,10 @@ window.__ModuleLoader__.load({
 .sct-root .sct-filter button:hover{color:var(--zw-text);background:var(--zw-hover)}
 /* 选中态不只靠颜色：加粗 + 边框，深浅主题都一眼可分（6.2） */
 .sct-root .sct-filter button[aria-pressed="true"]{background:var(--zw-accent-soft);border-color:var(--zw-accent);color:var(--zw-text);font-weight:600}
+/* 经验库按钮：虚线边框 + 更弱的默认色，与"待办范围"在视觉上分开 */
+.sct-root .sct-filter .sct-filter-sep{color:var(--zw-muted);padding:0 2px;align-self:center;font-size:12px}
+.sct-root .sct-filter .sct-filter-journal{border-style:dashed;border-color:var(--zw-line)}
+.sct-root .sct-filter .sct-filter-journal[aria-pressed="true"]{border-style:solid}
 .sct-section-label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:20px 0 10px;font-size:12px;color:var(--zw-muted);letter-spacing:.3px}
 .sct-section-label:first-of-type{margin-top:8px}
 .sct-tasks{display:flex;flex-direction:column;gap:10px}
@@ -145,6 +226,8 @@ window.__ModuleLoader__.load({
 .sct-root .sct-check:hover{border-color:var(--zw-accent);color:var(--zw-accent);background:transparent}
 .sct-root .sct-check[data-done="true"]{border-color:var(--zw-success);background:var(--zw-success);color:var(--zw-accent-text)}
 .sct-root .sct-check[data-shape="idea"]{border-color:var(--zw-accent);color:var(--zw-accent)}
+/* 经验教训库：方形入口 + 中性色，与"可勾选的圆"明确区分，暗示它不是动作 */
+.sct-root .sct-check[data-shape="archive"]{border-radius:6px;border-color:var(--zw-line-strong);color:var(--zw-muted);font-size:13px}
 .sct-root .sct-check:focus-visible{outline:2px solid var(--zw-focus);outline-offset:3px}
 .sct-root .sct-task-title{display:block;width:100%;background:none;border:0;padding:1px 2px;margin:-1px -2px;min-height:0;border-radius:4px;text-align:left;font-size:15px;font-weight:600;line-height:1.5;color:var(--zw-text);white-space:normal;overflow-wrap:anywhere}
 .sct-root .sct-task-title:hover{background:var(--zw-hover);color:var(--zw-text)}
@@ -216,10 +299,33 @@ window.__ModuleLoader__.load({
 .sct-load-more:hover{background:var(--zw-accent-soft)}
 .sct-edit-entry{margin:6px 0 2px}
 .sct-edit{background:var(--zw-raised);border-radius:8px;padding:14px;border-top:0 !important;margin-top:12px !important}
+.sct-stage-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.sct-stage-row select{flex:0 0 auto;min-width:120px}
+.sct-customers{display:flex;flex-direction:column;gap:10px}
+.sct-customer{background:var(--zw-raised);border-radius:8px;padding:12px 14px}
+.sct-customer-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:5px}
+.sct-customer-head b{font-size:14px}
+.sct-customer-contact{font-size:11.5px;color:var(--zw-muted)}
+.sct-customer-counts{font-size:12px;color:var(--zw-muted);margin-bottom:4px}
+.sct-customer-money{font-size:12.5px;color:var(--zw-accent-on-soft);margin-bottom:5px}
+.sct-customer-list{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:5px}
+.sct-customer-label{font-size:11px;color:var(--zw-muted);margin-right:2px}
+.sct-chip{font-size:11.5px;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:999px;padding:2px 9px}
+.sct-customer-note{font-size:11px;color:var(--zw-muted);margin-top:6px}
 .sct-edit label{display:block;font-size:12px;color:var(--zw-muted);margin:10px 0 5px}
 .sct-edit textarea{width:100%;font:inherit;font-size:13px;color:inherit;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:6px;padding:8px 10px;resize:vertical;min-height:64px}
 .sct-edit input[type="text"]{width:100%;font:inherit;font-size:13px;color:inherit;background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:6px;padding:8px 10px}
 .sct-edit-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+/* ---- 「记一条跟踪」输入框 ----
+   这是详情弹层里最高频的输入：提示词要求写"今天见了谁、对方说了什么、
+   下一步什么时候再联系"，两行塞不下，用户一边写一边滚动。
+   给它一个能看全四五行的高度，并允许手动拉高（长跟踪很常见）。
+   宽度撑满弹层正文（正文本身有 22px 内边距，这里不再加左右 margin）。 */
+.sct-root .sct-track-box{display:block;width:100%;min-height:112px;font:inherit;font-size:13.5px;line-height:1.65;color:var(--zw-text);background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:8px;padding:11px 13px;resize:vertical;transition:border-color .15s,box-shadow .15s}
+.sct-root .sct-track-box:focus{border-color:var(--zw-accent);box-shadow:0 0 0 3px var(--zw-accent-soft);outline:none}
+.sct-root .sct-track-box::placeholder{color:var(--zw-muted);opacity:1}
+/* 按钮与说明各占一行，避免「记下」按钮被挤在输入框右侧显得局促 */
+.sct-track-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
 .sct-cal{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:12px}
 .sct-cal .sct-w{font-size:10.5px;text-align:center;color:var(--zw-muted);padding-bottom:4px}
 .sct-d{position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:11.5px;border-radius:6px;color:var(--zw-text)}
@@ -273,6 +379,111 @@ window.__ModuleLoader__.load({
 .sct-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--zw-surface);border:1px solid var(--zw-line-strong);border-radius:10px;padding:11px 16px;font-size:13px;box-shadow:0 20px 70px rgba(0,0,0,.35);z-index:60}
 @media(prefers-reduced-motion:reduce){.sct-root *{transition:none !important}}
 
+/* Focus workspace: one capture lane, a task sheet and a quiet reference column. */
+.sct-root{--zw-shell-max:none;--zw-layout-gap:28px;--zw-aside-w:clamp(320px,24cqw,480px);--zw-shell-pad:32px;scrollbar-color:var(--zw-line-strong) transparent;caret-color:var(--zw-accent)}
+.sct-root ::selection{background:var(--zw-accent-soft);color:var(--zw-text)}
+.sct-topbar{min-height:76px;padding:14px 32px;background:var(--zw-surface);max-width:none;gap:12px}
+.sct-brand{gap:10px;flex-shrink:0}
+.sct-root .sct-brandmark{width:38px;height:38px;padding:5px;color:var(--zw-accent)}
+.sct-brand strong{font-size:17px;letter-spacing:1px;line-height:1.5}
+.sct-brand p{font-size:11px}
+.sct-top-actions{gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.sct-root .sct-action-btn,.sct-community{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:36px;padding:7px 10px;border-radius:8px;background:transparent;border:1px solid transparent;font-size:12px}
+.sct-root .sct-action-btn:hover,.sct-community:hover{background:var(--zw-raised);border-color:var(--zw-line)}
+.sct-root .sct-control-icon{width:16px;height:16px}
+.sct-theme-switch{display:flex;align-items:center;gap:2px;background:var(--zw-raised);border:1px solid var(--zw-line);border-radius:9px;padding:3px}
+.sct-root .sct-theme-switch button{display:flex;align-items:center;justify-content:center;gap:5px;min-height:32px;border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 8px;font-size:12px;color:var(--zw-muted)}
+.sct-root .sct-theme-switch button[aria-pressed="true"]{background:var(--zw-surface);border-color:var(--zw-line-strong);color:var(--zw-accent-on-soft);font-weight:600}
+.sct-sync{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums;font-size:11px}
+.sct-shell{padding:0 var(--zw-shell-pad) 24px;max-width:var(--zw-shell-max)}
+.sct-hero{padding:25px 0 20px;align-items:center}
+.sct-hero h1{font-size:25px;font-weight:650;letter-spacing:-.5px;line-height:1.4}
+.sct-root .sct-summary{font-size:13px;margin-top:6px}
+.sct-hero-date{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--zw-muted);white-space:nowrap}
+.sct-capture{flex:none;padding:10px 12px;margin:0 0 24px;gap:10px;border-radius:12px;background:var(--zw-surface);border:1px solid var(--zw-line-strong)}
+.sct-capture:focus-within{border-color:var(--zw-accent)}
+.sct-root .sct-capture select{min-height:42px;border-radius:7px;background:var(--zw-raised);border-color:transparent;max-width:160px;padding:8px 12px}
+.sct-root .sct-capture input{min-height:42px;font-size:14px;padding:9px 12px}
+.sct-root .sct-primary-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:9px 22px;border-radius:8px}
+.sct-root :where(input,textarea)::placeholder{color:var(--zw-muted);opacity:1}
+.sct-root select option{background:var(--zw-surface);color:var(--zw-text)}
+.sct-main{background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:14px;padding:0 22px}
+.sct-tabs{gap:24px;margin-bottom:16px;padding-top:6px}
+.sct-root .sct-tab{height:52px;font-size:15px;gap:6px}
+.sct-root .sct-tab[aria-selected="true"]{color:var(--zw-accent-on-soft)}
+.sct-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;padding:0 6px;height:20px;border-radius:5px;background:var(--zw-raised);font-size:11px;margin-left:2px}
+.sct-list-controls{display:flex;flex-direction:column;gap:12px;padding-bottom:14px;border-bottom:1px solid var(--zw-line)}
+.sct-filter{gap:4px;margin:0}
+.sct-root .sct-filter button{border-radius:6px;padding:5px 10px;min-height:32px}
+.sct-root .sct-filter button[aria-pressed="true"]{border-color:transparent;background:var(--zw-accent-soft);color:var(--zw-accent-on-soft);font-weight:600}
+.sct-toolbar{margin:0;gap:8px;width:100%;min-width:0}
+.sct-search{min-width:0}
+.sct-root .sct-search input{background:var(--zw-raised);min-height:36px;border-color:transparent}
+.sct-root .sct-sort{min-height:36px;font-size:12px;border-color:var(--zw-line)}
+.sct-root .sct-search-clear{display:flex;align-items:center;justify-content:center;min-height:26px;width:26px;padding:0;border:0;background:transparent}
+.sct-section-label{margin:20px 0 8px;font-size:12px;font-weight:600;letter-spacing:0}
+.sct-tasks{gap:0}
+.sct-task{padding:16px 2px;gap:14px;border:0;border-bottom:1px solid var(--zw-line);border-radius:0;background:transparent}
+.sct-task:last-child{border-bottom:0}
+.sct-task:hover{background:var(--zw-hover)}
+.sct-root .sct-task-title{font-size:14px;line-height:1.6;font-weight:600}
+.sct-task-body{gap:6px}
+.sct-task-actions{gap:4px}
+.sct-root .sct-task-actions button{min-height:32px;font-size:12px;padding:4px 8px;border-radius:6px}
+.sct-root .sct-task-actions button:hover{background:var(--zw-accent-soft);color:var(--zw-accent-on-soft)}
+.sct-list-scroll{padding-bottom:20px}
+.sct-aside{display:flex;flex-direction:column;gap:24px;padding:4px 0 24px;overflow-y:auto;scrollbar-gutter:stable}
+.sct-side-block{flex:none;overflow:visible;padding:0 0 24px;border:0;border-bottom:1px solid var(--zw-line);border-radius:0;background:transparent}
+.sct-side-block:last-child{border-bottom:0}
+.sct-side-title h2,.sct-cal-head h2{font-size:14px;font-weight:650}
+.sct-agenda{gap:0}
+.sct-agenda-item{padding:10px 0;border-bottom:1px solid var(--zw-line)}
+.sct-agenda-item:last-child{border:0;padding-bottom:0}
+.sct-agenda-date{background:var(--zw-surface);border:1px solid var(--zw-line);border-radius:7px;padding:6px 0;color:var(--zw-text)}
+.sct-reminder-time{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;color:var(--zw-text)}
+.sct-reminder-time-label{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--zw-muted)}
+.sct-reminder-time time{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums}
+.sct-delivery{margin:6px 0 16px}
+.sct-reminder-card .sct-side-title{margin-bottom:12px}
+.sct-reminder-time{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;background:var(--zw-accent-soft);border:1px solid var(--zw-line);border-radius:12px;color:var(--zw-accent-on-soft)}
+.sct-reminder-time-label{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500}
+.sct-reminder-time time{font-size:24px;font-weight:600;line-height:1.2;font-variant-numeric:tabular-nums;letter-spacing:1px}
+.sct-delivery{margin:10px 0 12px;padding-bottom:10px;border-bottom:1px solid var(--zw-line)}
+.sct-reminder-card .sct-conn{display:grid;grid-template-columns:7px auto minmax(0,1fr);gap:8px;padding:5px 0;align-items:baseline}
+.sct-reminder-card .sct-conn i{align-self:center}
+.sct-reminder-card .sct-conn-target{text-align:right;overflow-wrap:anywhere;font-weight:500}
+.sct-root .sct-reminder-card .sct-conn-warn{background:var(--zw-warn-soft);color:var(--zw-warning-on-soft);border-radius:8px;padding:8px 10px;margin:8px 0;font-size:12px}
+.sct-report-heading{font-size:12px;font-weight:600;color:var(--zw-muted);margin-bottom:6px;letter-spacing:.5px}
+.sct-reminder-card .sct-report-list{list-style:none;padding:0;margin:0;font-size:12px}
+.sct-reminder-card .sct-report-list li{list-style:none;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid var(--zw-line)}
+.sct-reminder-card .sct-report-list li:last-child{border-bottom:0}
+.sct-report-list time{font-size:12px;line-height:1.5;font-weight:500;font-variant-numeric:tabular-nums;color:var(--zw-text);background:var(--zw-raised);border-radius:5px;padding:2px 8px}
+.sct-report-help{margin-top:10px;border-top:1px solid var(--zw-line);padding-top:10px;color:var(--zw-muted);font-size:12px}
+.sct-report-help summary{display:flex;justify-content:space-between;align-items:center;gap:12px;list-style:none;cursor:pointer;min-height:24px;border-radius:4px}
+.sct-report-help summary::-webkit-details-marker{display:none}
+.sct-report-help summary::after{content:'';width:6px;height:6px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-right:4px}
+.sct-report-help[open] summary::after{transform:rotate(225deg)}
+.sct-report-help summary:hover{color:var(--zw-text)}
+.sct-report-help summary:focus-visible{outline:2px solid var(--zw-focus);outline-offset:3px}
+.sct-root .sct-report-help .sct-side-note{margin-top:10px;line-height:1.8}
+.sct-root .sct-drawer{border-radius:18px;box-shadow:0 24px 90px #00000040}
+.sct-drawer::backdrop{background:#09171080;backdrop-filter:blur(4px)}
+.sct-root .sct-empty{border-style:dashed;background:var(--zw-surface);padding:40px 24px}
+@container sct (max-width:859px){
+  .sct-root .sct-main{border-radius:16px;padding:16px}
+  .sct-root .sct-shell{padding:0 20px 20px}
+  .sct-root .sct-toolbar{flex-basis:100%;min-width:0}
+  .sct-root .sct-search{max-width:none}
+}
+@container sct (max-width:559px){
+  .sct-root .sct-main{padding:12px}
+  .sct-root .sct-side-block{padding:16px}
+  .sct-root .sct-tab{padding:0 12px;font-size:14px}
+  .sct-root .sct-filter{gap:4px}
+  .sct-root .sct-filter button{padding:6px 10px}
+  .sct-root .sct-list-controls{gap:12px}
+}
+
 /* ================= 自适应断点（U02） =================
    全部用 @container 而不是 @media：断点依据**插件容器的实际宽度**，
    不是浏览器窗口。宿主侧栏展开、面板拖动缩放、右侧栏打开时，
@@ -305,11 +516,13 @@ window.__ModuleLoader__.load({
   .sct-root .sct-scroll{overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable}
   .sct-root .sct-shell{flex:none;min-height:0}
   .sct-root .sct-layout{flex:none;min-height:0;align-items:start}
-  .sct-root .sct-main{overflow:visible;min-height:0}
+  .sct-root .sct-main{overflow:visible;min-height:0;order:-1}
   .sct-root .sct-list-scroll{overflow:visible;min-height:0;flex:none;padding-bottom:8px;scrollbar-gutter:auto}
-  .sct-root .sct-aside{display:grid;grid-template-columns:1fr 1fr;gap:20px 24px;overflow:visible;padding-bottom:32px}
+  .sct-root .sct-aside{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:auto;gap:20px 24px;overflow:visible;padding-bottom:32px}
   .sct-root .sct-aside .sct-side-block:last-child{grid-column:1/-1}
-  .sct-root .sct-side-block{padding-bottom:16px}
+  .sct-root .sct-side-block{padding-bottom:16px;overflow:visible}
+  .sct-root .sct-aside .sct-cal{flex:none;grid-auto-rows:auto}
+  .sct-root .sct-aside .sct-d{aspect-ratio:1}
   .sct-root .sct-topbar{min-height:76px}
 }
 
@@ -344,6 +557,134 @@ window.__ModuleLoader__.load({
   .sct-root .sct-drawer-simple{padding:16px}
   .sct-root .sct-drawer h2{font-size:18px}
 }
+@container sct (max-width:1159px){
+ .sct-root .sct-shell{padding:0 22px 22px}
+ .sct-root .sct-hero{padding:20px 0 18px}
+ .sct-root .sct-hero h1{font-size:23px}
+ .sct-root .sct-sync{display:none}
+ .sct-root .sct-theme-switch button span{display:none}
+ .sct-root .sct-theme-switch button{width:34px}
+}
+@container sct (max-width:859px){
+ .sct-root .sct-main{padding:0 18px}
+ .sct-root .sct-aside{padding:4px 0 24px}
+ .sct-root .sct-side-block{padding:0 0 20px}
+ .sct-root .sct-hero-date{white-space:normal}
+}
+@container sct (max-width:559px){
+ .sct-root .sct-shell{padding:0 14px 20px}
+ .sct-root .sct-topbar{padding:12px 14px}
+ .sct-root .sct-top-actions{display:flex;width:100%;justify-content:flex-start;gap:4px}
+ .sct-root .sct-theme-switch{margin-left:auto}
+ .sct-root .sct-hero{gap:8px;padding:20px 0 16px}
+ .sct-root .sct-hero h1{font-size:22px}
+ .sct-root .sct-capture{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px;margin-bottom:18px}
+ .sct-root .sct-capture select{grid-column:1;grid-row:2;width:100%;max-width:none}
+ .sct-root .sct-capture input{grid-column:1/-1;grid-row:1;width:100%}
+ .sct-root .sct-primary-btn{grid-column:2;grid-row:2}
+ .sct-root .sct-capture-error,.sct-root .sct-capture-confirm,.sct-root .sct-notch{grid-column:1/-1}
+ .sct-root .sct-main{padding:0 12px;border-radius:12px}
+ .sct-root .sct-tabs{gap:18px;margin-bottom:12px}
+ .sct-root .sct-tab{padding:0 2px}
+ .sct-root .sct-toolbar{margin:0;min-width:0}
+ .sct-root .sct-sort{flex:0 1 auto;max-width:100%}
+ .sct-root .sct-task{padding:14px 2px}
+ .sct-root .sct-task-actions{padding-left:38px}
+}
+@media (max-height:650px){
+ .sct-root .sct-scroll{overflow-y:auto}
+ .sct-root .sct-shell{flex:none}
+ .sct-root .sct-layout{flex:none;align-items:start}
+ .sct-root .sct-main,.sct-root .sct-list-scroll,.sct-root .sct-aside{overflow:visible;flex:none}
+}
+
+/* Task dialogs have their own reading widths instead of stretching with the task sheet. */
+.sct-root .sct-dialog-detail,.sct-root .sct-dialog-done{left:50%;transform:translate(-50%,-50%);max-width:calc(100vw - 32px);max-height:min(88dvh,900px);border-radius:16px}
+.sct-root .sct-dialog-detail{width:1000px;container-type:inline-size;container-name:sct-detail}
+.sct-root .sct-dialog-done{width:560px}
+.sct-dialog-detail .sct-drawer-head{padding:20px 28px 22px;border-bottom:1px solid var(--zw-line)}
+.sct-detail-head-actions{display:flex;gap:8px;align-items:center;flex:none}
+.sct-detail-head-actions button{font-size:12px;min-height:32px;padding:5px 12px}
+.sct-dialog-detail .sct-drawer-head h2{margin:14px 0 12px;font-size:22px;line-height:1.45;max-width:40em;overflow-wrap:anywhere}
+.sct-dialog-detail .sct-task-meta{gap:8px 14px}
+.sct-dialog-detail .sct-drawer-body{padding:0 28px;scrollbar-gutter:auto}
+.sct-detail-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(240px,1fr);gap:28px}
+.sct-detail-grid:not(:has(.sct-detail-context)){grid-template-columns:minmax(0,1fr)}
+.sct-detail-activity,.sct-detail-context{min-width:0;padding:24px 0}
+.sct-detail-context{border-left:1px solid var(--zw-line);padding-left:24px}
+.sct-dialog-detail .sct-detail-grid section{margin:0 0 24px;padding:0;border:0}
+.sct-dialog-detail .sct-detail-grid section:last-child{margin-bottom:0}
+.sct-dialog-detail section h3,.sct-dialog-detail .sct-field-title{font-size:13px;font-weight:600;color:var(--zw-text);margin:0 0 12px;letter-spacing:0}
+.sct-dialog-detail .sct-track-box{min-height:144px;background:var(--zw-raised);border-color:var(--zw-line-strong);font-size:14px}
+.sct-track-actions{align-items:flex-start;gap:16px}
+.sct-track-actions button{flex:none;min-width:72px}
+.sct-inline-hint{font-size:12px;line-height:1.7;color:var(--zw-muted);overflow-wrap:anywhere}
+.sct-track-actions .sct-inline-hint{flex:1}
+.sct-dialog-detail .sct-notice{background:transparent;padding:0;margin:10px 0;color:var(--zw-muted)}
+.sct-dialog-detail .sct-tl{gap:0;padding-left:5px}
+.sct-dialog-detail .sct-tl-item{position:relative;padding:0 0 22px 20px;border-left:1px solid var(--zw-line-strong)}
+.sct-dialog-detail .sct-tl-item::before{content:"";position:absolute;left:-4px;top:5px;width:7px;height:7px;border-radius:50%;background:var(--zw-muted)}
+.sct-dialog-detail .sct-tl-item:first-child::before{background:var(--zw-accent)}
+.sct-dialog-detail .sct-tl-item:last-child{padding-bottom:0}
+.sct-dialog-detail .sct-tl-item b{font-size:12px;font-weight:400;line-height:1.7;margin-bottom:6px}
+.sct-dialog-detail .sct-tl-item blockquote{border:0;padding:0;margin:0;line-height:1.75;font-size:14px}
+.sct-dialog-detail .sct-drawer-foot{padding:16px 28px;background:var(--zw-raised)}
+.sct-dialog-detail .sct-edit{margin:20px 0!important;padding:20px}
+.sct-dialog-detail .sct-edit :is(input,textarea){width:100%}
+.sct-done-form{display:flex;flex-direction:column;min-height:0}
+.sct-done-body{overflow-y:auto;padding:28px;min-height:0}
+.sct-dialog-done h2{margin:0 0 18px;font-size:22px}
+.sct-done-subject{font-size:14px;line-height:1.75;padding:12px 16px;background:var(--zw-raised);border-radius:8px;overflow-wrap:anywhere}
+.sct-dialog-done label{margin:22px 0 10px;font-size:13px;font-weight:600}
+.sct-root .sct-dialog-done textarea{display:block;width:100%;min-height:144px;resize:vertical;border-color:var(--zw-line-strong);font-size:14px;line-height:1.75;padding:12px 14px}
+.sct-dialog-done .sct-inline-hint{margin-top:12px}
+.sct-dialog-done .sct-done-footer{flex:none;margin:0;padding:16px 28px;border-top:1px solid var(--zw-line);background:var(--zw-raised);gap:8px}
+.sct-done-footer button:first-child{margin-right:auto}
+@container sct-detail (max-width:700px){
+ .sct-detail-grid{grid-template-columns:minmax(0,1fr);gap:0}
+ .sct-detail-context{padding:20px 0;border-left:0;border-top:1px solid var(--zw-line)}
+ .sct-dialog-detail .sct-drawer-head{padding:16px 20px}
+ .sct-dialog-detail .sct-drawer-head h2{font-size:19px}
+ .sct-dialog-detail .sct-drawer-body{padding:0 20px}
+ .sct-dialog-detail .sct-drawer-foot{padding:14px 20px}
+}
+@media(max-width:559px){
+ .sct-root .sct-dialog-detail,.sct-root .sct-dialog-done{max-width:calc(100vw - 20px);max-height:92dvh;border-radius:12px}
+ .sct-done-body{padding:22px 18px}
+ .sct-dialog-done .sct-done-footer{padding:14px 18px}
+ .sct-done-footer button{padding:7px 9px;font-size:12px}
+ .sct-track-actions{flex-wrap:wrap;gap:10px}
+ .sct-track-actions .sct-inline-hint{flex-basis:100%}
+ .sct-track-actions button{margin-left:auto}
+}
+
+/* Sidebar: stable calendar height and compact sections at every desktop width. */
+.sct-root .sct-aside{gap:16px;padding-bottom:0;scrollbar-width:none;scrollbar-gutter:auto}
+.sct-root .sct-aside::-webkit-scrollbar{display:none}
+.sct-root .sct-aside .sct-side-block{padding-bottom:16px}
+.sct-root .sct-aside .sct-side-block:last-child{padding-bottom:0}
+.sct-root .sct-aside .sct-side-title{margin-bottom:10px}
+.sct-root .sct-aside .sct-agenda-item{padding:7px 0}
+.sct-root .sct-aside .sct-agenda-date{padding:4px 0}
+.sct-root .sct-aside .sct-cal-head{margin-bottom:8px}
+.sct-root .sct-aside .sct-cal{margin-top:0;grid-auto-rows:30px;row-gap:2px}
+.sct-root .sct-aside .sct-d{aspect-ratio:auto;min-height:0;height:30px}
+.sct-root .sct-aside .sct-w{display:flex;align-items:center;justify-content:center;padding:0}
+.sct-root .sct-aside .sct-report-list li{padding:4px 0}
+.sct-root .sct-aside .sct-delivery{margin:8px 0;padding-bottom:8px}
+.sct-root .sct-aside .sct-report-help{margin-top:8px;padding-top:8px}
+
+/* On wide, shorter windows, put reminders and the calendar next to each other. */
+@container sct (min-width:1800px){
+ @media(max-height:1100px){
+  .sct-root .sct-layout{grid-template-columns:minmax(0,1fr) 480px}
+  .sct-root .sct-aside{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto 1fr;gap:20px;align-items:start}
+  .sct-root .sct-aside .sct-side-block:first-child{grid-column:1/-1}
+  .sct-root .sct-aside .sct-reminder-card{border-bottom:0;padding-bottom:0}
+  .sct-root .sct-aside .sct-side-block:last-child{grid-column:auto}
+ }
+}
+
 `;
 
     const MESSAGES = {
@@ -365,12 +706,34 @@ window.__ModuleLoader__.load({
         'action.confirmReschedule': '确认改期',
         'action.mergeInto': '并入这条',
         'action.createSeparate': '另建记录',
-        'action.promote': '转成创作',
-        'tab.pending': '待收',
+        'action.promote': '转入',
+        'action.promoteTo': '转入{name}',
+        'theme.label': '外观',
+        'theme.system': '跟随系统',
+        'theme.light': '浅色',
+        'theme.dark': '深色',
+        'tab.pending': '待办',
         'tab.all': '全部记录',
+        'tab.customers': '客户',
+        'cust.title': '客户台账',
+        'cust.won': '中标 {n}',
+        'cust.lost': '未中标 {n}',
+        'cust.running': '在跟 {n}',
+        'cust.visits': '拜访 {n}',
+        'cust.amount': '中标 {name}',
+        'cust.margin': '利润率 {name}%',
+        'cust.runningList': '在跟',
+        'cust.visitList': '最近拜访',
+        'cust.lastVisit': '最近拜访：{name}',
+        'cust.none': '暂无记录',
+        'cust.emptyTitle': '还没有客户数据',
+        'cust.emptyBody': '录一条商机或一次拜访，填上客户单位，这里就会按客户自动聚起来。中标、未中标、拜访都算在同一名下。',
         'tab.list': '视图切换',
-        'filter.user': '用户记录',
+        // "全部"而不是"用户记录"：它本来是"排除助手域后的全部"，
+        // 但"用户记录"看着像一个域，容易和第 2 行的事务/销售/创作并排误读。
+        'filter.user': '全部',
         'filter.label': '记录范围',
+        'filter.journalHint': '经验教训库：给模型查的踩坑记录，不是待办',
         'hero.attention': '把注意力，留给眼前这一件。',
         'hero.calm': '今天，可以从容推进。',
         'hero.firstSub': '从一条记录开始，逐渐看见进展。',
@@ -391,6 +754,7 @@ window.__ModuleLoader__.load({
         'group.dueToday': '今天到期',
         'group.soon': '剩 2 个工作日内',
         'group.revisit': '值得重新看看',
+        'group.followup': '今日跟进',
         'group.sleep': '沉睡的灵感',
         'group.idle': '进行中',
         'group.open': '进行中',
@@ -399,11 +763,20 @@ window.__ModuleLoader__.load({
         'status.today': '今天到期',
         'status.soon': '剩 {n} 个工作日',
         'status.sleep': '沉睡 {n} 天',
+        // 跟进中：措辞刻意不同于"停滞"——那是你忘了，这是它本来就要天天推
+        'status.followup': '跟进中 · {n} 天未更新',
         'status.stale': '停滞 {n} 天',
         'status.idleDays': '距上次更新 {n} 天',
+        'status.promoted': '已转 {name}',
+        'status.from': '源自 {name}',
+        'status.archived': '经验',
         'status.done': '已完成',
         'deadline.none': '未设期限',
         'deadline.due': '{d} 截止',
+        'deadline.recorded': '记于 {d}',
+        /* 经验教训库：说明它能做什么，替代不存在的"完成/改期"按钮 */
+        'detail.archivedNote': '经验教训库的条目没有「完成」和「改期」——它记的是踩过的坑与对应的约束，不是待办。要补充后续，用「编辑」写进下一步或备注。',
+        'group.journalCount': '共 {n} 条经验',
         'quick.placeholder': '记下一件事，或一个刚出现的想法…',
         'quick.domainLabel': '记录所属域',
         'quick.contentLabel': '记录内容',
@@ -418,22 +791,41 @@ window.__ModuleLoader__.load({
         'detail.done': '已完成',
         'detail.open': '未完成 / 未转化',
         'detail.next': '下一步',
-        'detail.timeline': '时间轴 · 原话留痕',
+        'detail.timeline': '时间轴',
+        'detail.noTimeline': '还没有进展记录。新的跟踪内容会保存在这里。',
         'detail.notes': '备注',
         'detail.modifyDeadline': '修改截止日期',
         'detail.markDone': '标记完成',
-        'detail.convertTitle': '灵感处理',
-        'detail.convertBody': '灵感不使用「完成」。可将其转为创作项目继续推进。',
+        'detail.markAs': '标记为{name}',
+        'stage.title': '推进阶段',
+        'stage.update': '更新阶段',
+        'stage.notice': '换成这一步的实际状态就更新，时间轴会自动记一条。可以跳步，也可以退回（比如报价退回立项重算）。',
+        'stage.current': '当前截止：{name}',
+        'stage.same': '已经是这个阶段了。',
+        'stage.done': '已更新为「{name}」',
+        'track.title': '记一条跟踪',
+        'track.placeholder': '今天见了谁、对方说了什么、下一步什么时候再联系…',
+        'track.add': '记下',
+        'track.notice': '原话一字不改追加进时间轴；不会新建条目，商机始终是这一条。',
+        'track.done': '已记下这条跟踪。',
+        'detail.convertTitle': '转入其他域',
+        'detail.convertBody': '这条记录可以转成另一条更具体的记录：原记录保留并标注去向，历史进展一并带过去。',
         'reschedule.title': '修改截止日期',
         'reschedule.newDate': '新的截止日期',
         'reschedule.notice': '将修改条目期限，不是仅延后一次提醒。',
         'reschedule.ok': '{id} 截止日期已更新',
         'reschedule.failed': '改期失败，日期已保留。',
-        'promote.title': '转成创作项目',
+        'promote.title': '转入{name}',
+        'promote.targetLine': '将转入：{name}（原记录保留，历史进展一并带过去）',
+        'promote.nameLabel': '{name}名称',
+        'promote.namePlaceholder': '如：滨海新区污水处理厂设备采购',
+        'promote.nameNotice': '换个能长期跟踪的名字：带上客户、标的和年份，几个月后翻台账才认得出是哪个项目。',
         'promote.deadlineLabel': '计划的结束时间',
-        'promote.notice': '项目需要计划结束时间，才能在到期前提醒你。用户明确说"不急"也可以暂不设期限。',
+        'promote.notice': '新记录需要计划结束时间，才能在到期前提醒你。确实"不急"也可以暂不设期限。',
         'promote.openEnded': '暂不设期限',
-        'promote.confirm': '转成项目',
+        'promote.confirm': '确认转入',
+        'promote.confirmTo': '确认转入{name}',
+        'promote.doneTo': '已转入{name}：',
         'action.edit': '编辑',
         'action.saveEdit': '保存',
         'detail.editing': '编辑这条记录',
@@ -442,6 +834,14 @@ window.__ModuleLoader__.load({
         'detail.categoryLabel': '分类',
         'detail.categoryPlaceholder': '如 沟通 / 文档 / 研发',
         'detail.saved': '已保存',
+        'sales.customerLabel': '客户 / 招标单位',
+        'sales.customerPlaceholder': '如 滨海新区水务局',
+        'sales.bidNoLabel': '招标编号',
+        'sales.bidNoPlaceholder': '立项依据，如 BH-2026-0731',
+        'sales.amountLabel': '中标金额（元）',
+        'sales.amountPlaceholder': '未开标留空',
+        'sales.profitLabel': '中标利润（元）',
+        'sales.profitPlaceholder': '利润率由金额与利润现算',
         'search.placeholder': '搜标题、原话或进展…',
         'search.label': '搜索记录',
         'search.clear': '清空搜索',
@@ -457,6 +857,13 @@ window.__ModuleLoader__.load({
         'group.loadMore': '还有 {n} 条已完成，加载全部',
         'undo.done': '已标记完成：{t}',
         'undo.reopened': '已重新打开：{t}',
+        /* 「完成并记录」小框 */
+        'done.title': '完成并记录',
+        'done.quoteLabel': '这次是什么情况？',
+        'done.quotePlaceholder': '例：客户方回复今年不做，明年再议',
+        'done.notice': '写的内容会作为原话记进时间轴，最上面一条。不写也可以直接完成。',
+        'done.silent': '只标完成',
+        'done.confirm': '完成并记录',
         'settings.title': '按你的节奏提醒',
         'settings.sub': '每日汇总当前值得关注的事情。',
         'settings.timeLabel': '每日提醒时间',
@@ -468,6 +875,7 @@ window.__ModuleLoader__.load({
         'aside.reminders': '提醒与回顾',
         'aside.remindTime': '每日提醒',
         'aside.reportSchedule': '报告生成',
+        'aside.reportHelp': '生成规则与补报说明',
         'aside.reportMonthly': '月报 · 每月最后一天 {t}',
         'aside.reportQuarterly': '季报 · 季末最后一天 {t}',
         'aside.reportHalf': '半年报 · 6/12 月末 {t}',
@@ -514,12 +922,32 @@ window.__ModuleLoader__.load({
         'action.confirmReschedule': 'Confirm',
         'action.mergeInto': 'Merge into it',
         'action.createSeparate': 'Create separately',
-        'action.promote': 'To creation',
-        'tab.pending': 'Attention',
+        'action.promote': 'Move in',
+        'action.promoteTo': 'Move to {name}',
+        'theme.label': 'Appearance',
+        'theme.system': 'System',
+        'theme.light': 'Light',
+        'theme.dark': 'Dark',
+        'tab.pending': 'To-do',
         'tab.all': 'All records',
+        'tab.customers': 'Customers',
+        'cust.title': 'Customer ledger',
+        'cust.won': 'Won {n}',
+        'cust.lost': 'Lost {n}',
+        'cust.running': 'Open {n}',
+        'cust.visits': 'Visits {n}',
+        'cust.amount': 'Won {name}',
+        'cust.margin': 'margin {name}%',
+        'cust.runningList': 'Open',
+        'cust.visitList': 'Recent visits',
+        'cust.lastVisit': 'Last visit: {name}',
+        'cust.none': 'No records yet',
+        'cust.emptyTitle': 'No customer data yet',
+        'cust.emptyBody': 'Record an opportunity or a visit with a customer name and it will be grouped here automatically.',
         'tab.list': 'View switcher',
-        'filter.user': 'My records',
+        'filter.user': 'All',
         'filter.label': 'Scope',
+        'filter.journalHint': 'Lesson library: pitfalls for the model to look up, not to-dos',
         'hero.attention': 'Focus on the one in front of you.',
         'hero.calm': 'A calm day to move things forward.',
         'hero.firstSub': 'Start with one record and watch progress appear.',
@@ -540,6 +968,7 @@ window.__ModuleLoader__.load({
         'group.dueToday': 'Due today',
         'group.soon': 'Due in 2 workdays',
         'group.revisit': 'Worth another look',
+        'group.followup': 'Follow up today',
         'group.sleep': 'Dormant ideas',
         'group.idle': 'In progress',
         'group.open': 'in progress',
@@ -548,11 +977,19 @@ window.__ModuleLoader__.load({
         'status.today': 'Due today',
         'status.soon': '{n} workdays left',
         'status.sleep': 'Dormant {n}d',
+        'status.followup': 'Following up · {n}d since update',
         'status.stale': 'Stalled {n}d',
         'status.idleDays': 'Last update {n}d ago',
+        'status.promoted': 'Moved to {name}',
+        'status.from': 'From {name}',
+        'status.archived': 'Lesson',
         'status.done': 'Done',
         'deadline.none': 'No deadline',
         'deadline.due': 'Due {d}',
+        'deadline.recorded': 'Recorded {d}',
+        'detail.archivedNote':
+          'Lessons have no "done" or "reschedule" — they record a pitfall and its constraint, not a to-do. Use Edit to add follow-ups to the next step or notes.',
+        'group.journalCount': '{n} lesson(s)',
         'quick.placeholder': 'A task, or a just-appeared idea…',
         'quick.domainLabel': 'Record domain',
         'quick.contentLabel': 'Record content',
@@ -567,22 +1004,41 @@ window.__ModuleLoader__.load({
         'detail.done': 'Done',
         'detail.open': 'Open / unconverted',
         'detail.next': 'Next step',
-        'detail.timeline': 'Timeline · original words',
+        'detail.timeline': 'Timeline',
+        'detail.noTimeline': 'No activity yet. New follow-ups will appear here.',
         'detail.notes': 'Notes',
         'detail.modifyDeadline': 'Change deadline',
         'detail.markDone': 'Mark done',
-        'detail.convertTitle': 'Idea handling',
-        'detail.convertBody': 'Ideas do not use "done". Convert it into a creation project instead.',
+        'detail.markAs': 'Mark as {name}',
+        'stage.title': 'Advance stage',
+        'stage.update': 'Update stage',
+        'stage.notice': 'Set the actual status and update. A timeline entry is recorded automatically. You can skip or step back.',
+        'stage.current': 'Current deadline: {name}',
+        'stage.same': 'It is already at this stage.',
+        'stage.done': 'Updated to "{name}"',
+        'track.title': 'Log a follow-up',
+        'track.placeholder': 'Who you met, what they said, when to follow up…',
+        'track.add': 'Log it',
+        'track.notice': 'Your words are appended to the timeline verbatim. No new record is created — the opportunity stays one record.',
+        'track.done': 'Follow-up logged.',
+        'detail.convertTitle': 'Move to another domain',
+        'detail.convertBody': 'This record can become a more specific record. The original is kept and marked with its destination; its history is carried over.',
         'reschedule.title': 'Change deadline',
         'reschedule.newDate': 'New deadline',
         'reschedule.notice': 'This modifies the record deadline, not just one reminder.',
         'reschedule.ok': '{id} deadline updated',
         'reschedule.failed': 'Reschedule failed. Date preserved.',
-        'promote.title': 'Turn into a creation project',
+        'promote.title': 'Move to {name}',
+        'promote.targetLine': 'Destination: {name} (the original record is kept; its history is carried over)',
+        'promote.nameLabel': '{name} name',
+        'promote.namePlaceholder': 'e.g. Binhai WWTP equipment procurement',
+        'promote.nameNotice': 'Use a name you can track for months: include the customer, the subject and the year.',
         'promote.deadlineLabel': 'Planned end date',
-        'promote.notice': 'A project needs an end date so it can remind you before it is due. If the user said "no rush", you may leave it open.',
+        'promote.notice': 'The new record needs an end date so it can remind you before it is due. If it is really "no rush", you may leave it open.',
         'promote.openEnded': 'No deadline',
-        'promote.confirm': 'Create project',
+        'promote.confirm': 'Move it in',
+        'promote.confirmTo': 'Move to {name}',
+        'promote.doneTo': 'Moved to {name}: ',
         'action.edit': 'Edit',
         'action.saveEdit': 'Save',
         'detail.editing': 'Edit this record',
@@ -591,6 +1047,14 @@ window.__ModuleLoader__.load({
         'detail.categoryLabel': 'Category',
         'detail.categoryPlaceholder': 'e.g. comms / docs / dev',
         'detail.saved': 'Saved',
+        'sales.customerLabel': 'Customer / Tenderer',
+        'sales.customerPlaceholder': 'e.g. Binhai Water Authority',
+        'sales.bidNoLabel': 'Tender No.',
+        'sales.bidNoPlaceholder': 'e.g. BH-2026-0731',
+        'sales.amountLabel': 'Award amount (CNY)',
+        'sales.amountPlaceholder': 'Leave empty before bid opening',
+        'sales.profitLabel': 'Award profit (CNY)',
+        'sales.profitPlaceholder': 'Margin is derived from amount and profit',
         'search.placeholder': 'Search titles, notes, updates…',
         'search.label': 'Search records',
         'search.clear': 'Clear search',
@@ -606,6 +1070,12 @@ window.__ModuleLoader__.load({
         'group.loadMore': '{n} more completed — load all',
         'undo.done': 'Marked done: {t}',
         'undo.reopened': 'Reopened: {t}',
+        'done.title': 'Complete and record',
+        'done.quoteLabel': 'What happened this time?',
+        'done.quotePlaceholder': 'e.g. Client said no for this year, revisit next year',
+        'done.notice': 'What you write is kept as your original words on the timeline. You can also finish without writing anything.',
+        'done.silent': 'Just mark done',
+        'done.confirm': 'Done and record',
         'settings.title': 'Reminders at your pace',
         'settings.sub': 'A daily digest of what deserves attention.',
         'settings.timeLabel': 'Daily reminder time',
@@ -617,6 +1087,7 @@ window.__ModuleLoader__.load({
         'aside.reminders': 'Reminders & review',
         'aside.remindTime': 'Daily reminder',
         'aside.reportSchedule': 'Report generation',
+        'aside.reportHelp': 'Generation rules & missed reports',
         'aside.reportMonthly': 'Monthly · last day {t}',
         'aside.reportQuarterly': 'Quarterly · quarter-end {t}',
         'aside.reportHalf': 'Half-year · Jun/Dec end {t}',
@@ -672,8 +1143,23 @@ window.__ModuleLoader__.load({
       return date.getFullYear() + ' 年 ' + (date.getMonth() + 1) + ' 月 ' + date.getDate() + ' 日 · 星期' + week;
     }
 
-    function fill(template, a, b) {
-      const args = [a, b];
+    /**
+     * 金额显示：万为单位，保留一位小数。
+     *
+     * 3200000 → "320 万"。不显示千分位完整数字：
+     * 客户台账是横向扫一眼的场景，一列 "3,200,000" 读起来比 "320 万" 慢得多。
+     * 不足 1 万的原样显示，避免变成 "0.0 万"。
+     */
+    function formatMoney(value) {
+      const num = Number(value);
+      if (!Number.isFinite(num) || num === 0) return '0 元';
+      if (Math.abs(num) < 10000) return `${Math.round(num)} 元`;
+      const wan = num / 10000;
+      // 整数就不带小数点，省得出现"320.0 万"
+      return `${Number.isInteger(wan) ? wan : wan.toFixed(1)} 万`;
+    }
+
+    function fill(template, a, b) {      const args = [a, b];
       let index = 0;
       return String(template == null ? '' : template).replace(/\{[a-z]+\}/g, function () {
         const value = args[index];
@@ -688,14 +1174,25 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * 待收判定：**优先用服务端给的 reason**（快照里每条都带），
+     * 待办判定：**优先用服务端给的 reason**（快照里每条都带），
      * 前端不再自己维护一份阈值——域阈值改了不用同步改前端。
      * 仅当快照没有 reason 字段时（旧宿主）才回退到本地推断。
      */
     function attentionOf(item) {
       if (!item || item.kind !== 'open') return null;
+      /**
+       * 已转出的记录不进待办。
+       *
+       * 服务端已经返回 reason=null（见 secretary.js 的 reminderReason），
+       * 但下面几行是**前端兜底**：service 没给 reason 时按 stallDays 自己判。
+       * 不在这里也挡一道的话，转出的那条照样会以"距上次更新 N 天"挂回待办里，
+       * 两条标题一模一样的行就还是都在——用户看到的仍然是"重复记录"。
+       */
+      if (item.promotedTo) return null;
       if (item.reason !== undefined) {
         if (item.reason === 'dormant') return 'sleep';
+        // daily：销售商机的"今日跟进"，每个工作日都出现
+        if (item.reason === 'daily') return 'followup';
         return item.reason; // 'overdue' | 'today' | 'soon' | 'stall' | null
       }
       if (item.due && item.due.level === 'overdue') return 'overdue';
@@ -708,10 +1205,31 @@ window.__ModuleLoader__.load({
       return null;
     }
 
+    /**
+     * 范围过滤。
+     *
+     * 助手域是**经验教训库**（lifecycle=journal），条目没有完成/改期，
+     * 也永远不会有 reason——所以它在「待办」页签下**永远是空的**。
+     * 空分组比不显示更糟：用户会以为漏加载了。
+     * 因此待办页把 journal 域整个排除，它们只在「全部记录」里出现。
+     *
+     * 判断依据用条目自带的 `lifecycle`（服务端随每条下发），
+     * 不按 domain id 硬编码——将来别的域也能声明成 journal。
+     */
+    function isJournalItem(item) {
+      return item && item.lifecycle === 'journal';
+    }
+
     function inScope(item, scope) {
-      if (scope === 'user') return item.domain !== 'assistant';
+      if (scope === 'user') return !isJournalItem(item);
       if (scope === 'all') return true;
       return item.domain === scope;
+    }
+
+    /** 待办页：在 inScope 基础上再排除经验库（它们不构成待办） */
+    function inPendingScope(item, scope) {
+      if (isJournalItem(item)) return false;
+      return inScope(item, scope);
     }
 
     /**
@@ -787,6 +1305,21 @@ window.__ModuleLoader__.load({
       );
     }
 
+    function ControlIcon(props) {
+      const paths = {
+        light: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5 19 19M5 19l1.5-1.5M17.5 6.5 19 5',
+        dark: 'M20.5 14A9 9 0 0 1 10 3.5 9 9 0 1 0 20.5 14Z',
+        system: 'M4 4h16v12H4ZM8 21h8M12 16v5',
+        calendar: 'M5 5h14v15H5ZM8 3v4M16 3v4M5 10h14',
+        clock: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18M12 7v5l3 2',
+        add: 'M12 5v14M5 12h14',
+        refresh: 'M20 7v5h-5M4 17v-5h5M6.1 7a7 7 0 0 1 11.6-1L20 9M4 15l2.3 3A7 7 0 0 0 18 17',
+        settings: 'M4 7h16M4 17h16M8 4v6M16 14v6',
+      };
+      return h('svg', { viewBox: '0 0 24 24', className: 'sct-control-icon', 'aria-hidden': 'true' },
+        h('path', { d: paths[props.name] }));
+    }
+
     function SidebarIcon(props) {
       return h(BrandMark, { className: '', size: (props && props.size) || 20 });
     }
@@ -850,13 +1383,14 @@ window.__ModuleLoader__.load({
        *
        * 分组早已优先用服务端 `reason`，行标签却还写死 `stallDays >= 5`——
        * 实测创作条目停滞 6 天、服务端 reason 为 null（该域阈值 10 天），
-       * 待收里不提醒，行上却打"停滞 6 天"的红标，自相矛盾。
+       * 待办里不提醒，行上却打"停滞 6 天"的红标，自相矛盾。
        * 现在：只有服务端判为 `stall` 才用"停滞"警示；
        * 其余情况给中性的"距上次更新 N 天"，不暗示异常。
        */
       const attention = attentionOf(item);
       const isStalled = !done && attention === 'stall';
       const isDormant = !done && attention === 'sleep';
+      const isFollowup = !done && attention === 'followup';
       const chips = [];
       if (done) {
         chips.push({ text: t('status.done'), kind: 'info' });
@@ -866,6 +1400,9 @@ window.__ModuleLoader__.load({
         chips.push({ text: t('status.today'), kind: 'today' });
       } else if (item.due && item.due.level === 'soon') {
         chips.push({ text: fill(t('status.soon'), item.workingDays), kind: 'warn' });
+      } else if (isFollowup) {
+        // 跟进中：中性偏积极，不用警示色——这单没出问题，只是要天天推
+        chips.push({ text: fill(t('status.followup'), item.stallDays || 0), kind: 'today' });
       } else if (isStalled) {
         chips.push({ text: fill(t('status.stale'), item.stallDays), kind: 'warn' });
       } else if (isDormant) {
@@ -877,35 +1414,80 @@ window.__ModuleLoader__.load({
       const timeline = item.timeline || [];
       const latest = timeline.length ? timeline[0] : null;
       const note = (latest && latest.quote) || item.next || '';
+      /**
+       * 经验教训库条目不显示"未设期限"。
+       * 它本来就不该有期限，写"未设期限"等于暗示这是个没填的漏项。
+       * 换成记录日期——对经验库来说"什么时候踩的坑"才是有用的信息。
+       */
+      const archived = item.kind === 'archived';
       const meta = [
         h('span', { key: 'domain' }, NAMES[item.domain] || item.domain),
         h('span', { key: 'sep' }, '·'),
-        h('span', { key: 'due' }, item.deadline ? fill(t('deadline.due'), item.deadline.slice(5).replace('-', ' / ')) : t('deadline.none')),
+        archived
+          ? h('span', { key: 'at' }, fill(t('deadline.recorded'), String(item.created ?? '').slice(5).replace('-', ' / ')))
+          : h('span', { key: 'due' }, item.deadline ? fill(t('deadline.due'), item.deadline.slice(5).replace('-', ' / ')) : t('deadline.none')),
       ];
       if (chips.length) {
         meta.push(h('span', { key: 'chip', className: 'sct-status', 'data-kind': chips[0].kind }, chips[0].text));
       }
+      /**
+       * 转化标识：这是"同一条线索的两个阶段"还是两条不同的活，必须一眼能分。
+       *
+       * 不加这个的话，工作事项转成商机后两行标题完全一样、都挂在待办里，
+       * 用户只会看到"重复的记录"——而实际上一条是源头、一条是去处，
+       * 源头那条点进去还能看到"已转成销售 S-2026-001"。
+       *
+       * 两个方向都标：
+       *   promotedTo  已转出 → 这条不再需要跟，去两条里标了去向的那条
+       *   origin      转来的 → 上一步在哪
+       */
+      if (item.promotedTo) {
+        meta.push(
+          h('span', { key: 'promoted', className: 'sct-status', 'data-kind': 'plain' }, fill(t('status.promoted'), item.promotedTo)),
+        );
+      }
+      if (item.origin) {
+        meta.push(h('span', { key: 'origin', className: 'sct-status', 'data-kind': 'plain' }, fill(t('status.from'), item.origin)));
+      }
+
+      /**
+       * 经验教训库（lifecycle=journal）的条目没有"完成/重开/改期"这些动作。
+       * 不能只把按钮藏起来——勾选圆圈本身也得换成纯展示的符号，
+       * 否则用户点下去什么都不会发生，比不显示更糟。
+       * `archived` 已在上方随 meta 一起算好，这里直接复用。
+       */
+      const canComplete = !isIdea && !archived;
 
       return h(
         'article',
-        { className: 'sct-task', 'data-done': done ? 'true' : 'false' },
-        h(
-          'button',
-          {
-            className: 'sct-check',
-            type: 'button',
-            'data-shape': isIdea ? 'idea' : 'task',
-            // 选中态不只靠颜色：done 时 aria-pressed 与勾选符号同时表达（6.2）
-            'data-done': done ? 'true' : 'false',
-            'aria-pressed': done ? 'true' : 'false',
-            'aria-label': isIdea ? t('action.view') + '：' + item.title : done ? t('action.reopen') + '：' + item.title : t('action.done') + '：' + item.title,
-            onClick: function () {
-              if (isIdea) props.onView(item);
-              else props.onToggleDone(item);
-            },
-          },
-          done ? '✓' : isIdea ? '✧' : '',
-        ),
+        { className: 'sct-task', 'data-done': done ? 'true' : 'false', 'data-archived': archived ? 'true' : 'false' },
+        canComplete
+          ? h(
+              'button',
+              {
+                className: 'sct-check',
+                type: 'button',
+                'data-shape': 'task',
+                // 选中态不只靠颜色：done 时 aria-pressed 与勾选符号同时表达（6.2）
+                'data-done': done ? 'true' : 'false',
+                'aria-pressed': done ? 'true' : 'false',
+                'aria-label': done ? t('action.reopen') + '：' + item.title : t('action.done') + '：' + item.title,
+                onClick: function () { props.onToggleDone(item); },
+              },
+              done ? '✓' : '',
+            )
+          : h(
+              // 非动作元素：经验条目/Idea 用符号标记，点击等同"查看"
+              'button',
+              {
+                className: 'sct-check',
+                type: 'button',
+                'data-shape': archived ? 'archive' : 'idea',
+                'aria-label': t('action.view') + '：' + item.title,
+                onClick: function () { props.onView(item); },
+              },
+              archived ? '≡' : '✧',
+            ),
         h(
           'div',
           { className: 'sct-task-body' },
@@ -921,7 +1503,8 @@ window.__ModuleLoader__.load({
           'div',
           { className: 'sct-task-actions' },
           h('button', { className: 'ghost', type: 'button', onClick: function () { props.onView(item); } }, t('action.view')),
-          !done && !isIdea
+          // 只有"有完成动作"的域才给改期入口；经验条目没有截止日期可改
+          !done && !isIdea && !archived
             ? h('button', { className: 'ghost', type: 'button', onClick: function () { props.onReschedule(item); } }, t('action.reschedule'))
             : null,
         ),
@@ -979,7 +1562,7 @@ window.__ModuleLoader__.load({
         };
       }, [props.open]);
       if (!props.open) return null;
-      return h('dialog', { ref: ref, className: 'sct-drawer', onClose: props.onClose, 'aria-label': props.label }, props.children);
+      return h('dialog', { ref: ref, className: 'sct-drawer' + (props.variant ? ' sct-dialog-' + props.variant : ''), onClose: props.onClose, 'aria-label': props.label }, props.children);
     }
 
     /**
@@ -1008,7 +1591,15 @@ window.__ModuleLoader__.load({
       const notes = item.notes || [];
 
       const startEdit = function () {
-        setEdit({ next: item.next || '', category: item.category || '' });
+        setEdit({
+          next: item.next || '',
+          category: item.category || '',
+          // 销售域字段：从快照下发值回填，没有就空串（后端空串表示清除）
+          customer: item.customer || '',
+          bidNo: item.bidNo || '',
+          amount: item.amount == null ? '' : String(item.amount),
+          profit: item.profit == null ? '' : String(item.profit),
+        });
         setError('');
       };
 
@@ -1016,11 +1607,25 @@ window.__ModuleLoader__.load({
         setBusy(true);
         setError('');
         try {
-          await props.onSave(item.id, {
+          const patch = {
             next: edit.next.trim(),
             // 空串表示清除分类（后端按 category === '' 删除）
             category: edit.category.trim(),
-          });
+          };
+          // 销售域字段只在有这个字段时才提交，避免把别的域的 undefined 也发过去
+          if (item.domain === 'sales') {
+            patch.customer = String(edit.customer || '').trim();
+            patch.bidNo = String(edit.bidNo || '').trim();
+            // 金额留空表示"还没开标"，要传空串让它清掉；有值就转成数字
+            const amountText = String(edit.amount || '').trim();
+            patch.amount = amountText === '' ? '' : Number(amountText);
+            const profitText = String(edit.profit || '').trim();
+            patch.profit = profitText === '' ? '' : Number(profitText);
+            // 前端先挡一道：非数字就别发请求，否则后端抛错也只看到一句英文堆栈
+            if (amountText !== '' && !Number.isFinite(patch.amount)) throw new Error('中标金额必须是数字');
+            if (profitText !== '' && !Number.isFinite(patch.profit)) throw new Error('中标利润必须是数字');
+          }
+          await props.onSave(item.id, patch);
           setEdit(null);
         } catch (error2) {
           setError(String((error2 && error2.message) || error2));
@@ -1033,7 +1638,9 @@ window.__ModuleLoader__.load({
         'div',
         { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' } },
         h('span', { className: 'small muted' }, (NAMES[item.domain] || item.domain) + ' · ' + item.id),
-        h('button', { className: 'ghost', onClick: props.onClose }, t('action.close')),
+        h('div', { className: 'sct-detail-head-actions' },
+          edit ? null : h('button', { type: 'button', onClick: startEdit }, t('action.edit')),
+          h('button', { className: 'ghost', type: 'button', onClick: props.onClose }, t('action.close'))),
       );
 
       const meta = [
@@ -1057,7 +1664,7 @@ window.__ModuleLoader__.load({
               rows: 3,
               value: edit.next,
               placeholder: t('detail.nextPlaceholder'),
-              onChange: function (event) { setEdit({ next: event.target.value, category: edit.category }); },
+              onChange: function (event) { setEdit({ ...edit, next: event.target.value }); },
             }),
             h('label', null, t('detail.categoryLabel')),
             h('input', {
@@ -1065,8 +1672,49 @@ window.__ModuleLoader__.load({
               value: edit.category,
               maxLength: 20,
               placeholder: t('detail.categoryPlaceholder'),
-              onChange: function (event) { setEdit({ next: edit.next, category: event.target.value }); },
+              onChange: function (event) { setEdit({ ...edit, category: event.target.value }); },
             }),
+            // 销售域专属：客户 / 招标编号 / 中标金额 / 中标利润
+            // 其他域不渲染这些框，免得用户在创作项目里看到"中标金额"
+            item.domain === 'sales' ? h('label', null, t('sales.customerLabel')) : null,
+            item.domain === 'sales'
+              ? h('input', {
+                  type: 'text',
+                  value: edit.customer,
+                  maxLength: 40,
+                  placeholder: t('sales.customerPlaceholder'),
+                  onChange: function (event) { setEdit({ ...edit, customer: event.target.value }); },
+                })
+              : null,
+            item.domain === 'sales' ? h('label', null, t('sales.bidNoLabel')) : null,
+            item.domain === 'sales'
+              ? h('input', {
+                  type: 'text',
+                  value: edit.bidNo,
+                  maxLength: 40,
+                  placeholder: t('sales.bidNoPlaceholder'),
+                  onChange: function (event) { setEdit({ ...edit, bidNo: event.target.value }); },
+                })
+              : null,
+            item.domain === 'sales' ? h('label', null, t('sales.amountLabel')) : null,
+            item.domain === 'sales'
+              ? h('input', {
+                  type: 'number',
+                  value: edit.amount,
+                  min: '0',
+                  placeholder: t('sales.amountPlaceholder'),
+                  onChange: function (event) { setEdit({ ...edit, amount: event.target.value }); },
+                })
+              : null,
+            item.domain === 'sales' ? h('label', null, t('sales.profitLabel')) : null,
+            item.domain === 'sales'
+              ? h('input', {
+                  type: 'number',
+                  value: edit.profit,
+                  placeholder: t('sales.profitPlaceholder'),
+                  onChange: function (event) { setEdit({ ...edit, profit: event.target.value }); },
+                })
+              : null,
             error ? h('p', { className: 'sct-error', role: 'alert' }, error) : null,
             h(
               'div',
@@ -1108,7 +1756,132 @@ window.__ModuleLoader__.load({
           )
         : null;
 
-      const footer = isIdea
+      /**
+       * 经验教训库（kind=archived）的底部只留"编辑"。
+       * 它没有可改的截止日期，也没有"完成"这个动作——
+       * 报告要求"对暂不支持的交互明确说明，不显示无效按钮"，
+       * 所以这里不是禁用按钮，而是**不渲染**，并在正文里说明它能做什么。
+       */
+      const archived = item.kind === 'archived';
+
+      /**
+       * 阶段推进：销售商机的核心操作，也是"后续流程怎么走"的答案。
+       *
+       * 只对 task 形态、且域声明了**多个**状态值的域显示（销售六档、工作四档都算）。
+       * 下拉里列的是这个域的全部状态值，当前值预选中——
+       * 用户选一个点「更新」，就完成一次阶段推进，时间轴会自动记一条。
+       *
+       * 为什么不做成"下一步"自动跳转：实际业务里会跳步、会退回（报价退回立项重算），
+       * 只允许单向走一格反而碍事。
+       */
+      const statusValues = Array.isArray(item.statusValues) ? item.statusValues : [];
+      const canAdvance = !archived && item.shape === 'task' && statusValues.length > 1;
+      const stageSection = canAdvance
+        ? h(
+            'section',
+            null,
+            h('h3', null, t('stage.title')),
+            h(
+              'div',
+              { className: 'sct-stage-row' },
+              h(
+                'select',
+                {
+                  value: props.stagePick == null ? (item.status || statusValues[0]) : props.stagePick,
+                  onChange: function (event) { props.onStagePick(event.target.value); },
+                },
+                statusValues.map(function (value) {
+                  return h('option', { key: value, value: value }, value);
+                }),
+              ),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'primary',
+                  disabled: props.stageBusy || (props.stagePick && props.stagePick === item.status),
+                  onClick: function () { props.onStageCommit(item, props.stagePick); },
+                },
+                props.stageBusy ? t('quick.saving') : t('stage.update'),
+              ),
+            ),
+            h('p', { className: 'sct-notice' }, t('stage.notice')),
+            // 当前阶段截止：推进到新阶段时通常也要改，放在这里省一次进出
+            h('p', { className: 'small muted' }, fill(t('stage.current'), item.deadline || t('deadline.none'))),
+          )
+        : null;
+
+      /**
+       * 跟踪记录：销售用得多，但所有 task 条目都用得上。
+       *
+       * 直接调 /update 传 quote，原话进时间轴。**不新建条目**——
+       * 新建会被去重算法判重（标题相似度够高就自动并入），等于在赌算法。
+       * 这是整个销售流程里最高频的操作，必须能在面板上一步完成。
+       */
+      const trackSection = !archived && item.shape === 'task'
+        ? h(
+            'section',
+            null,
+            h('label', { htmlFor: 'sct-track-input', className: 'sct-field-title' }, t('track.title')),
+            h('textarea', {
+              className: 'sct-track-box', id: 'sct-track-input', 'aria-describedby': 'sct-track-hint',
+              // rows 只是首屏估算，真正的高度由 .sct-track-box 的 min-height 决定；
+              // 两行塞不下"见了谁 + 说了什么 + 下一步"，用户会边写边滚。
+              rows: 5,
+              value: props.trackText || '',
+              placeholder: t('track.placeholder'),
+              onChange: function (event) { props.onTrackText(event.target.value); },
+              onKeyDown: function (event) {
+                // Ctrl/Cmd+Enter 直接记下，与页面其他输入框保持一致
+                if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                  event.preventDefault();
+                  if (!props.trackBusy && String(props.trackText || '').trim()) {
+                    props.onTrackCommit(item, props.trackText);
+                  }
+                }
+              },
+            }),
+            h(
+              'div',
+              { className: 'sct-track-actions' },
+              h('p', { className: 'sct-inline-hint', id: 'sct-track-hint' }, t('track.notice')),
+              h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'primary',
+                  disabled: props.trackBusy || !String(props.trackText || '').trim(),
+                  onClick: function () { props.onTrackCommit(item, props.trackText); },
+                },
+                props.trackBusy ? t('quick.saving') : t('track.add'),
+              ),
+            ),
+          )
+        : null;
+
+      /**
+       * 这个条目能转成什么：**由域的能力决定，不写死域 id**。
+       *
+       * 原先只有 `isIdea` 才有转化入口，于是加了销售域之后，
+       * 工作事项在面板上根本没有"转入商机"的按钮——后端早就支持了，
+       * 前端却按 `domain === 'idea'` 判断。现在快照把 promotesTo 下发了，
+       * 有这个能力就渲染，没有就不渲染。
+       */
+      const promoteTargets = (Array.isArray(item.promotesTo) ? item.promotesTo : []).filter(function (target) {
+        // 已经转过的就别再显示按钮，免得用户重复点
+        return !item.promotedTo;
+      });
+
+      /**
+       * 「标记完成」按域声明的完成值走。
+       *
+       * 工作域 doneValues=['done'] → 目标值 done
+       * 销售域 doneValues=['中标'] → 目标值 中标
+       * 已经是完成态就不显示这个按钮。
+       */
+      const doneValues = Array.isArray(item.doneValues) && item.doneValues.length ? item.doneValues : ['done'];
+      const doneButtonTarget = !done && item.shape === 'task' ? doneValues[0] : null;
+      const convertSection = promoteTargets.length
         ? h(
             'section',
             null,
@@ -1116,20 +1889,35 @@ window.__ModuleLoader__.load({
             h('p', { className: 'muted small' }, t('detail.convertBody')),
             h(
               'div',
-              { style: { marginTop: '10px' } },
-              h(
-                'button',
-                {
-                  className: 'primary',
-                  onClick: function () {
-                    props.onClose();
-                    props.onPromote(item);
+              { style: { marginTop: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' } },
+              promoteTargets.map(function (target) {
+                return h(
+                  'button',
+                  {
+                    key: target.id,
+                    className: 'primary',
+                    onClick: function () {
+                      props.onClose();
+                      props.onPromote(item, target.id);
+                    },
                   },
-                },
-                t('action.promote'),
-              ),
+                  /**
+                   * **目标域名一律写出来**。
+                   *
+                   * 早先只有一个去向时用了通用文案「转入」，结果工作域（唯一去向是销售）
+                   * 的按钮就只写着"转入"两个字——点下去会去哪，用户完全看不出来。
+                   * 目标名一次都不能省：去向数量是数据决定的，用户不该靠猜。
+                   */
+                  fill(t('action.promoteTo'), target.name),
+                );
+              }),
             ),
           )
+        : null;
+
+      // 灵感域的底部什么都没有（转化入口在正文里）；能转化的其他域，按钮放底部更顺手
+      const footer = archived
+        ? null
         : h(
             'footer',
             null,
@@ -1143,7 +1931,16 @@ window.__ModuleLoader__.load({
               },
               t('detail.modifyDeadline'),
             ),
-            !done
+            /**
+             * 「标记完成」现在按**域声明的完成值**写，不再硬编码 done。
+             *
+             * 原实现无脑写 status: 'done'，而销售域没有这个值——
+             * 点一下直接 500，用户还以为是坏了。现在：
+             *   - 工作域：doneValues=['done'] → 按钮写「标记完成」
+             *   - 销售域：doneValues=['中标'] → 按钮写「标记中标」
+             * 按钮文案也按目标值走，用户点之前就知道会发生什么。
+             */
+            doneButtonTarget
               ? h(
                   'button',
                   {
@@ -1153,34 +1950,38 @@ window.__ModuleLoader__.load({
                       props.onToggleDone(item);
                     },
                   },
-                  t('detail.markDone'),
+                  doneButtonTarget === 'done' ? t('action.done') : fill(t('detail.markAs'), doneButtonTarget),
                 )
               : null,
           );
 
-      // 三段式：头部与底部按钮固定，只有正文滚动。
-      // 灵感域没有 footer 按钮（转化入口在正文里），底部就不渲染。
-      const showFooter = !isIdea;
+      // 灵感没有 footer 按钮（转化入口在正文里），经验条目也没有——底部就不渲染。
+      const showFooter = !isIdea && !archived;
 
       return h(
         Drawer,
-        { open: true, onClose: props.onClose, label: item.title },
+        { open: true, onClose: props.onClose, label: item.title, variant: 'detail' },
         h(
           'div',
           { className: 'sct-drawer-head' },
           head,
           h('h2', null, item.title),
           h('div', { className: 'sct-task-meta' }, meta),
-          edit ? null : h('div', { className: 'sct-edit-entry' }, h('button', { className: 'ghost', type: 'button', onClick: startEdit }, t('action.edit'))),
         ),
         h(
           'div',
           { className: 'sct-drawer-body' },
-          nextSection,
           editSection,
-          timelineSection,
-          notesSection,
-          isIdea ? footer : null,
+          archived ? h('p', { className: 'sct-notice' }, t('detail.archivedNote')) : null,
+          h('div', { className: 'sct-detail-grid' },
+            h('div', { className: 'sct-detail-activity' },
+              trackSection,
+              timelineSection || h('section', { className: 'sct-timeline-empty' },
+                h('h3', null, t('detail.timeline')),
+                h('p', { className: 'muted small' }, t('detail.noTimeline')))),
+            nextSection || stageSection || notesSection || convertSection
+              ? h('div', { className: 'sct-detail-context' }, stageSection, nextSection, notesSection, convertSection)
+              : null),
         ),
         showFooter ? h('div', { className: 'sct-drawer-foot' }, footer) : null,
       );
@@ -1264,28 +2065,110 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * 灵感转创作时的期限补齐。
-     * 转成项目等于新建一条创作记录，没有计划结束时间就无法到期提醒，
+     * 「完成并记录」小框。
+     *
+     * 一件事做完时，最有价值的往往是那一刻的具体情况：
+     * "客户方说今年不做，明年再议"。这个框给一次低成本的机会把它留下，
+     * 同时保留"什么都不写，直接标完成"的快捷路径。
+     *
+     * 用 Drawer（dialog）而不是行内展开：小框要能承接较长文字，
+     * 行内展开会把列表挤变形。
+     */
+    function DoneDrawer(props) {
+      const state = props.state;
+      const t = props.t;
+      if (!state || !state.item) return null;
+      const submit = function (event) {
+        if (event) event.preventDefault();
+        props.onConfirm();
+      };
+      return h(
+        Drawer,
+        { open: true, onClose: props.onCancel, label: t('done.title'), variant: 'done' },
+        h(
+          'form',
+          { className: 'sct-done-form', onSubmit: submit },
+          h('div', { className: 'sct-done-body' },
+          h('h2', null, t('done.title')),
+          h('p', { className: 'sct-done-subject' }, state.item.title),
+          h('label', { htmlFor: 'sct-done-input' }, t('done.quoteLabel')),
+          h('textarea', {
+            id: 'sct-done-input', 'aria-describedby': 'sct-done-hint',
+            rows: 5,
+            value: state.text,
+            placeholder: t('done.quotePlaceholder'),
+            autoFocus: true,
+            onChange: function (event) { props.onText(event.target.value); },
+            onKeyDown: function (event) {
+              // Ctrl/Cmd+Enter 提交，与录入框保持一致
+              if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
+                event.preventDefault();
+                props.onConfirm();
+              }
+            },
+          }),
+          h('p', { className: 'sct-inline-hint', id: 'sct-done-hint' }, t('done.notice')),
+          state.error ? h('p', { className: 'sct-error', role: 'alert' }, state.error) : null,
+          ),
+          h(
+            'footer',
+            { className: 'sct-done-footer' },
+            h('button', { type: 'button', onClick: props.onCancel, disabled: state.busy }, t('action.cancel')),
+            h('button', { type: 'button', onClick: props.onSilent, disabled: state.busy }, t('done.silent')),
+            h('button', { className: 'primary', type: 'submit', disabled: state.busy }, state.busy ? t('quick.saving') : t('done.confirm')),
+          ),
+        ),
+      );
+    }
+
+    /**
+     * 转化时的期限补齐。
+     *
+     * 转成新记录等于新建一条，没有计划结束时间就无法到期提醒，
      * 所以后端会返回 need_deadline，这里就地让用户选日期（或明确"暂不设期限"）。
+     *
+     * 文案不写死目标域：工作→商机、商机→工作、灵感→创作都走这里，
+     * 目标名由 state.targetName 带进来并**在标题和确认按钮上都写出来**——
+     * 用户点开这个弹窗的时候，必须一眼知道自己在往哪儿转。
+     *
+     * **名称必须重填**：工作事项的标题是"去摸一下这个项目做不做"这种动作描述，
+     * 而商机名要能在后续几个月里作为整体跟踪的锚点（客户、标的、年份）。
+     * 沿用原标题会得到一个"摸一下"的商机，之后翻台账根本认不出来是哪个项目。
+     * 所以默认值给原标题（省得完全从零打），但要求用户确认后再提交。
      */
     function PromoteDrawer(props) {
       const state = props.state;
       const t = props.t;
       if (!state || !state.item) return null;
+      const targetName = state.targetName || '';
       return h(
         Drawer,
-        { open: true, onClose: props.onCancel, label: t('action.promote') },
+        { open: true, onClose: props.onCancel, label: fill(t('promote.title'), targetName) },
         h(
           'form',
           {
             className: 'sct-drawer-simple',
             onSubmit: function (event) {
               event.preventDefault();
-              props.onConfirm(state.item, state.date, false);
+              props.onConfirm(state.item, state.targetDomain, state.date, false, state.targetTitle);
             },
           },
-          h('h2', null, t('promote.title')),
+          h('h2', null, fill(t('promote.title'), targetName)),
           h('p', { className: 'muted' }, state.title),
+          // 明确写出"去处"：这一行是用户判断自己点对了没有的唯一依据
+          targetName ? h('p', { className: 'small' }, fill(t('promote.targetLine'), targetName)) : null,
+          h('label', null, fill(t('promote.nameLabel'), targetName)),
+          h('input', {
+            type: 'text',
+            value: state.targetTitle || '',
+            required: true,
+            maxLength: 60,
+            placeholder: t('promote.namePlaceholder'),
+            onChange: function (event) {
+              props.onTitle(event.target.value);
+            },
+          }),
+          h('p', { className: 'sct-notice' }, t('promote.nameNotice')),
           h('label', null, t('promote.deadlineLabel')),
           h('input', {
             type: 'date',
@@ -1303,10 +2186,14 @@ window.__ModuleLoader__.load({
             h('button', { type: 'button', onClick: props.onCancel }, t('action.cancel')),
             h(
               'button',
-              { type: 'button', onClick: function () { props.onConfirm(state.item, null, true); } },
+              { type: 'button', onClick: function () { props.onConfirm(state.item, state.targetDomain, null, true, state.targetTitle); } },
               t('promote.openEnded'),
             ),
-            h('button', { className: 'primary', type: 'submit', disabled: state.busy }, t('promote.confirm')),
+            h(
+              'button',
+              { className: 'primary', type: 'submit', disabled: state.busy },
+              targetName ? fill(t('promote.confirmTo'), targetName) : t('promote.confirm'),
+            ),
           ),
         ),
       );
@@ -1341,6 +2228,7 @@ window.__ModuleLoader__.load({
     }
 
     function Panel() {
+      const appearance = useTheme();
       // doneLimit 必须先声明再传给 useSnapshot（"全部记录"页可切到 all）
       const doneLimitState = useState(8);
       const doneLimit = doneLimitState[0];
@@ -1382,9 +2270,40 @@ window.__ModuleLoader__.load({
       const resState = useState({ item: null, date: '', error: '', busy: false });
       const reschedule = resState[0];
       const setReschedule = resState[1];
-      const promoteState = useState({ item: null, title: '', date: '', error: '', busy: false });
+      /**
+       * 「完成并记录」小框。
+       *
+       * 场景：一件事做完了，但完成那一刻往往有值得留下的具体信息——
+       * "客户方说今年不做，明年再议"。原来的实现点圆圈就直接 `status: done`，
+       * 并写一句硬编码的"面板标记完成"，等于把最有价值的内容丢掉了。
+       *
+       * `item` 非空即表示小框打开；`text` 是用户输入的内容（可为空）。
+       */
+      const doneState = useState({ item: null, text: '', error: '', busy: false });
+      const donePrompt = doneState[0];
+      const setDonePrompt = doneState[1];
+      const promoteState = useState({ item: null, targetDomain: '', targetName: '', title: '', targetTitle: '', date: '', error: '', busy: false });
       const promote = promoteState[0];
       const setPromote = promoteState[1];
+
+      /**
+       * 详情弹层里的两个就地操作：推进阶段、写跟踪记录。
+       *
+       * 状态放这里而不是弹层内部：弹层每次 reload 都会重挂，
+       * 状态若放在弹层里，保存过程中的忙碌态和用户已输入的跟踪文字会被清掉。
+       */
+      const stagePickState = useState('');
+      const stagePick = stagePickState[0];
+      const setStagePick = stagePickState[1];
+      const stageBusyState = useState(false);
+      const stageBusy = stageBusyState[0];
+      const setStageBusy = stageBusyState[1];
+      const trackTextState = useState('');
+      const trackText = trackTextState[0];
+      const setTrackText = trackTextState[1];
+      const trackBusyState = useState(false);
+      const trackBusy = trackBusyState[0];
+      const setTrackBusy = trackBusyState[1];
       const settingsState = useState({ open: false, time: '12:00', busy: false, error: '' });
       const settings = settingsState[0];
       const setSettings = settingsState[1];
@@ -1462,20 +2381,26 @@ window.__ModuleLoader__.load({
             return undefined;
           }
           let cancelled = false;
+          const selectedDomain = ((snap.data && snap.data.domains) || []).find((d) => d.id === scope);
+          const searchScope = tab === 'pending' && selectedDomain?.lifecycle === 'journal' ? 'user' : scope;
           const timer = setTimeout(function () {
             const params = new URLSearchParams({ q: keyword, limit: '50' });
-            if (scope !== 'user' && scope !== 'all') params.set('domain', scope);
+            if (searchScope !== 'user' && searchScope !== 'all') params.set('domain', searchScope);
             request('/search?' + params.toString())
               .then(function (data) {
                 if (cancelled) return;
                 const items = (data && data.items) || [];
-                // 助手域在"用户记录"范围下不显示（与列表筛选口径一致）
-                const filtered = scope === 'user' ? items.filter(function (x) { return x.domain !== 'assistant'; }) : items;
-                setSearchResult({ keyword: keyword, items: filtered });
+                /**
+                 * 搜索结果的范围过滤，口径与列表一致：
+                 * 「用户记录」排除经验库，但不按 domain id 硬编码——
+                 * 用条目自带的 lifecycle 判断，自定义 journal 域也适用。
+                 */
+                const filtered = searchScope === 'user' ? items.filter(function (x) { return x.lifecycle !== 'journal'; }) : items;
+                setSearchResult({ keyword: keyword, scope: searchScope, items: filtered });
               })
               .catch(function (error) {
                 if (cancelled) return;
-                setSearchResult({ keyword: keyword, items: [], error: String((error && error.message) || error) });
+                setSearchResult({ keyword: keyword, scope: searchScope, items: [], error: String((error && error.message) || error) });
               });
           }, 250);
           return function () {
@@ -1483,7 +2408,7 @@ window.__ModuleLoader__.load({
             clearTimeout(timer);
           };
         },
-        [search, scope],
+        [search, scope, tab, snap.data],
       );
 
       /** 切换排序：只影响前端展示顺序，不改数据 */
@@ -1505,23 +2430,106 @@ window.__ModuleLoader__.load({
         return copy;
       }, [ordering]);
 
+      /**
+       * 完成 / 重开。
+       *
+       * 完成时**先弹小框**（可写可不写），由 `confirmDone` 真正提交；
+       * 重开没有"要记什么"的问题，直接提交。
+       *
+       * 为什么不在完成时直接提交、把记录当可选后续：
+       * 完成那一刻正是信息最新鲜的时候，弹框问一句成本极低；
+       * 等用户回到详情页再补，多半就不会补了。
+       */
       const toggleDone = useCallback(
-        async function (item) {
+        function (item) {
+          const wasDone = item.kind === 'done';
+          if (wasDone) {
+            void submitDone(item, '');
+            return;
+          }
+          setDonePrompt({ item: item, text: '', error: '', busy: false });
+        },
+        [reload, showToast, t],
+      );
+
+      /** 真正提交完成/重开；`text` 非空时写进时间轴作为这次的原话 */
+      const submitDone = useCallback(
+        async function (item, text) {
           const wasDone = item.kind === 'done';
           const body = { id: item.id };
-          // 重开必须落到非完成状态：item.status 此刻就是 'done'，回填它会再提交一次 done
-          if (item.shape === 'project') body.stage = wasDone ? 'revising' : 'done';
-          else body.status = wasDone ? 'doing' : 'done';
-          if (!wasDone) body.note = '面板标记完成';
+          // 重开必须落到非完成状态：item.status 此刻就是完成值，回填它会再提交一次完成
+          if (item.shape === 'project') {
+            body.stage = wasDone ? 'revising' : 'done';
+          } else {
+            /**
+             * 完成值**按域声明**取，不再硬编码。
+             *
+             * 原实现无脑写 'done'，但销售域的完成值是「中标」——
+             * 点一下直接 500（后端校验会拒），用户以为是坏了。
+             * 现在：
+             *   完成 → 域声明的第一个完成值（工作 done / 销售 中标）
+             *   重开 → 域声明的默认值（工作 todo / 销售 商机）
+             * 后者不写死 'doing'：销售域没有 doing，写了同样报错。
+             */
+            const doneValues = Array.isArray(item.doneValues) && item.doneValues.length ? item.doneValues : ['done'];
+            const defaultValue = item.statusDefault || 'todo';
+            body.status = wasDone ? defaultValue : doneValues[0];
+          }
+          /**
+           * 只有用户真的写了内容才传 quote。
+           * 以前这里硬编码 `note: '面板标记完成'`——每条完成记录都被盖上
+           * 同一句废话，时间轴里全是噪音。现在：
+           *   - 写了内容 → quote（原话进时间轴，最上面）
+           *   - 没写内容 → 什么都不传，时间轴保持干净
+           */
+          const trimmed = String(text ?? '').trim();
+          if (!wasDone && trimmed) body.quote = trimmed;
           try {
             await request('/update', jsonBody(body));
             showToast(fill(t(wasDone ? 'undo.reopened' : 'undo.done'), item.title));
             await reload();
+            return true;
           } catch (error) {
-            showToast(t('quick.errorGeneric') + ' ' + ((error && error.message) || error));
+            return { error: String((error && error.message) || error) };
           }
         },
         [reload, showToast, t],
+      );
+
+      /** 小框里点「完成」/回车：先写内容再关框 */
+      const confirmDone = useCallback(
+        async function () {
+          const item = donePrompt.item;
+          if (!item) return;
+          setDonePrompt(function (prev) { return { ...prev, busy: true, error: '' }; });
+          const result = await submitDone(item, donePrompt.text);
+          if (result === true) {
+            setDonePrompt({ item: null, text: '', error: '', busy: false });
+            return;
+          }
+          setDonePrompt(function (prev) {
+            return { ...prev, busy: false, error: (result && result.error) || t('quick.errorGeneric') };
+          });
+        },
+        [donePrompt, submitDone, t],
+      );
+
+      /** 小框里点「只标完成」：不写内容，直接完成 */
+      const confirmDoneSilent = useCallback(
+        async function () {
+          const item = donePrompt.item;
+          if (!item) return;
+          setDonePrompt(function (prev) { return { ...prev, busy: true, error: '' }; });
+          const result = await submitDone(item, '');
+          if (result === true) {
+            setDonePrompt({ item: null, text: '', error: '', busy: false });
+            return;
+          }
+          setDonePrompt(function (prev) {
+            return { ...prev, busy: false, error: (result && result.error) || t('quick.errorGeneric') };
+          });
+        },
+        [donePrompt, submitDone, t],
       );
 
       const doReschedule = useCallback(
@@ -1548,28 +2556,135 @@ window.__ModuleLoader__.load({
         setReschedule({ item: item, date: item.deadline || toDay(new Date()), error: '', busy: false });
       }, []);
 
+      /**
+       * 目标域 id → 中文名。弹窗标题、确认按钮、成功提示都要用它。
+       *
+       * 从快照的域视图取，取不到就退回 id 本身（至少能显示"sales"而不是空白）。
+       */
+      const domainNameOf = useCallback(
+        function (domainId) {
+          if (!domainId) return '';
+          const list = (snap && snap.domains) || [];
+          const found = list.find(function (d) {
+            return d.id === domainId;
+          });
+          return (found && found.name) || String(domainId);
+        },
+        [snap],
+      );
+
+      /**
+       * 推进阶段：写 status，时间轴自动多一条。
+       *
+       * 不新建条目——这几个阶段始终是**同一条商机**在往前走。
+       * 成功后关掉详情：记录变了，旧对象是陈的，让用户从列表重新点开。
+       */
+      const doStageCommit = useCallback(
+        async function (item, value) {
+          const target = String(value || '').trim();
+          if (!target) return;
+          if (target === item.status) {
+            showToast(t('stage.same'));
+            return;
+          }
+          setStageBusy(true);
+          try {
+            await request('/update', jsonBody({ id: item.id, status: target }));
+            showToast(fill(t('stage.done'), target));
+            setStagePick('');
+            setDetailItem(null);
+            await reload();
+          } catch (error) {
+            showToast(String((error && error.message) || error));
+          } finally {
+            setStageBusy(false);
+          }
+        },
+        [reload, showToast, t],
+      );
+
+      /**
+       * 跟踪记录：原话进时间轴，**不新建条目**。
+       *
+       * 这里必须是 quote 而不是 note：quote 会以引用块形式在原话下面留痕，
+       * note 只进「备注」。用户说"今天见了甲方"，那句话本身就是要留的证据。
+       */
+      const doTrackCommit = useCallback(
+        async function (item, text) {
+          const trimmed = String(text || '').trim();
+          if (!trimmed) return;
+          setTrackBusy(true);
+          try {
+            await request('/update', jsonBody({ id: item.id, quote: trimmed }));
+            setTrackText('');
+            showToast(t('track.done'));
+            setDetailItem(null);
+            await reload();
+          } catch (error) {
+            showToast(String((error && error.message) || error));
+          } finally {
+            setTrackBusy(false);
+          }
+        },
+        [reload, showToast, t],
+      );
+
       const doPromote = useCallback(
-        async function (item, deadline, openEnded) {
+        async function (item, targetDomain, deadline, openEnded, targetTitle) {
           try {
             const body = { id: item.id, action: 'promote' };
+            // 目标域必须显式传：一个域可能有多个去向（工作→销售、销售→工作），
+            // 不传的话后端只能猜，猜错了用户要删掉重建
+            if (targetDomain) body.targetDomain = targetDomain;
+            // 新名称：用户在弹窗里填的商机名。空着就不传，后端沿用原标题。
+            const trimmedTitle = String(targetTitle == null ? '' : targetTitle).trim();
+            if (trimmedTitle) body.title = trimmedTitle;
             if (deadline) body.deadline = deadline;
             if (openEnded) body.openEnded = true;
             const data = await request('/link', jsonBody(body));
             const result = (data && data.result) || {};
-            // 转成项目也是新建记录：没有期限时后端会拒绝，面板要就地补日期
+            // 转成新记录也是新建：没有期限时后端会拒绝，面板要就地补日期
             if (result.action === 'need_deadline') {
+              const targetId = result.targetDomain || targetDomain || '';
               setDetailItem(null);
-              setPromote({ item: item, title: result.title || item.title, date: toDay(new Date()), error: '', busy: false });
+              setPromote({
+                item: item,
+                targetDomain: targetId,
+                // 目标名一起带进弹窗：标题和确认按钮都要写清楚"转去哪儿"
+                targetName: domainNameOf(targetId),
+                title: result.title || item.title,
+                // 名称输入框的初值：用户没填过就给原标题，让他至少有个起点可改
+                targetTitle: trimmedTitle || result.title || item.title,
+                date: toDay(new Date()),
+                error: '',
+                busy: false,
+              });
               return;
             }
-            showToast(t('action.promote') + '：' + (result.id || ''));
-            setPromote({ item: null, title: '', date: '', error: '', busy: false });
+            // 有多个去向又没指定：让用户在弹层里选，别在后端猜
+            if (result.action === 'need_target') {
+              setDetailItem(null);
+              setPromote({
+                item: item,
+                targetDomain: '',
+                targetName: '',
+                title: result.title || item.title,
+                targetTitle: trimmedTitle || result.title || item.title,
+                date: toDay(new Date()),
+                error: '',
+                busy: false,
+              });
+              return;
+            }
+            const targetName = domainNameOf(result.targetDomain || targetDomain);
+            showToast((targetName ? fill(t('promote.doneTo'), targetName) : t('action.promote')) + ' ' + (result.id || ''));
+            setPromote({ item: null, targetDomain: '', targetName: '', title: '', targetTitle: '', date: '', error: '', busy: false });
             await reload();
           } catch (error) {
             showToast(String((error && error.message) || error));
           }
         },
-        [reload, showToast, t],
+        [reload, showToast, t, domainNameOf],
       );
 
       /**
@@ -1676,6 +2791,11 @@ window.__ModuleLoader__.load({
 
       const data = snap.data;
       const domains = (data && data.domains) || [];
+      /**
+       * 客户台账：服务端已按客户聚合好（中标/未中标/在跟/拜访 + 金额合计）。
+       * 前端只负责渲染，不再自己算一遍——两处算法一定会漂移。
+       */
+      const customers = (data && data.customers) || [];
 
       const all = useMemo(
         function () {
@@ -1683,36 +2803,102 @@ window.__ModuleLoader__.load({
           domains.forEach(function (d) {
             (d.open || []).forEach(function (item) { items.push(item); });
             (d.recentDone || []).forEach(function (item) { items.push(item); });
+            // 经验教训库条目也进总集合，否则"全部记录"里看不到助手域
+            (d.archived || []).forEach(function (item) { items.push(item); });
           });
           return items;
         },
         [data],
       );
 
+      /**
+       * 「全部记录」页签的计数。
+       *
+       * 不能用 `scoped.length`——那是**当前已经渲染出来的行数**，
+       * 而快照只带回每个域最近 8 条已完成（doneLimit 默认 8）。
+       * 于是助手域 11 条已完成只回 8 条、工作/创作也各少几条，
+       * 页签显示 16 而实际有 24 条：**计数比真实少，且用户点开看不到差额**。
+       *
+       * 正确口径是服务端给的 `total`（不随截断变化）。各域 total 之和
+       * 本身就是权威数字，前端不该自己再数一遍。
+       *
+       * 范围判断同样走 lifecycle，不硬编码域 id。
+       *
+       * ── 范围兜底 ──
+       * 待办页不显示经验库按钮，但如果用户原本停在某个 journal 域的范围上
+       * 再切回待办页，那个范围在待办页已不可选——继续用它只会得到一片空白，
+       * 而按钮栏里没有任何一项是选中态，用户不知道自己在哪。
+       * 这里把它回落到「用户记录」。只影响渲染时的有效范围，不改用户的 state：
+       * 切回「全部记录」页时原来的选择还在。
+       */
+      const scopeJournalBlocked = useMemo(
+        function () {
+          if (tab !== 'pending' || scope === 'user' || scope === 'all') return false;
+          const target = domains.find(function (d) { return d.id === scope; });
+          return Boolean(target && target.lifecycle === 'journal');
+        },
+        [domains, scope, tab],
+      );
+      const effectiveScope = scopeJournalBlocked ? 'user' : scope;
+
+      const scopeDomains = useMemo(
+        function () {
+          if (effectiveScope === 'all') return domains;
+          if (effectiveScope === 'user') return domains.filter(function (d) { return d.lifecycle !== 'journal'; });
+          return domains.filter(function (d) { return d.id === effectiveScope; });
+        },
+        [domains, effectiveScope],
+      );
+
+      const totalCount = useMemo(
+        function () {
+          return scopeDomains.reduce(function (sum, d) { return sum + (d.total ?? 0); }, 0);
+        },
+        [scopeDomains],
+      );
+
+      /** 全部记录页的集合：按有效范围过滤 */
       const scoped = useMemo(function () {
-        return all.filter(function (item) { return inScope(item, scope); });
-      }, [all, scope]);
+        return all.filter(function (item) { return inScope(item, effectiveScope); });
+      }, [all, effectiveScope]);
+
+      /** 待办页的集合：排除经验库（它们不构成待办，在该页永远为空） */
+      const pendingScoped = useMemo(function () {
+        return all.filter(function (item) { return inPendingScope(item, effectiveScope); });
+      }, [all, effectiveScope]);
 
       const pendingItems = useMemo(function () {
-        return scoped.filter(function (item) { return attentionOf(item) !== null; });
-      }, [scoped]);
+        return pendingScoped.filter(function (item) { return attentionOf(item) !== null; });
+      }, [pendingScoped]);
+
+      /**
+       * 「待办」页签的计数：只数**有 reason 的**，不数全部未完成。
+       * 原来用 `scoped.filter(kind === 'open').length`，把经验库条目
+       * 和没有提醒的在办事项都算了进去；而待办页实际只展示有提醒的分组。
+       */
+      const pendingCount = useMemo(
+        function () {
+          return pendingScoped.filter(function (item) { return attentionOf(item) !== null; }).length;
+        },
+        [pendingScoped],
+      );
 
       const openInScope = useMemo(function () {
-        return scoped.filter(function (item) { return item.kind === 'open'; }).length;
-      }, [scoped]);
+        return pendingScoped.filter(function (item) { return item.kind === 'open'; }).length;
+      }, [pendingScoped]);
 
-      // "待收"页在没有任何到期/停滞/沉睡时，若该范围还有在办记录，
+      // "待办"页在没有任何到期/停滞/沉睡时，若该范围还有在办记录，
       // 就**直接把这些记录展示出来**（用户要求：有记录就展示记录），
       // 而不是用一句空态把已有内容挡在"全部记录"页签后面。
       const idleOpen = useMemo(function () {
-        return scoped
+        return pendingScoped
           .filter(function (item) { return item.kind === 'open'; })
           .sort(function (a, b) {
             const da = a.deadline || '9999-12-31';
             const db = b.deadline || '9999-12-31';
             return String(da).localeCompare(String(db));
           });
-      }, [scoped]);
+      }, [pendingScoped]);
 
       const groups = useMemo(
         function () {
@@ -1729,6 +2915,12 @@ window.__ModuleLoader__.load({
             { key: 'priority', label: t('group.priority'), items: by('overdue') },
             { key: 'dueToday', label: t('group.dueToday'), items: by('today') },
             { key: 'soon', label: t('group.soon'), items: by('soon') },
+            /**
+             * 今日跟进：销售商机每个工作日都出现在这里。
+             * 位置在"值得重新看看"之前——这些是**主动要推进**的，
+             * 比"你忘了动它"更该先处理。
+             */
+            { key: 'followup', label: t('group.followup'), items: by('followup') },
             { key: 'revisit', label: t('group.revisit'), items: by('stale') },
             { key: 'sleep', label: t('group.sleep'), items: by('sleep') },
           ];
@@ -1736,18 +2928,21 @@ window.__ModuleLoader__.load({
         [pendingItems, t],
       );
 
+      /**
+       * 「全部记录」页的分组。
+       *
+       * 与 scopeDomains 同一套口径（都走 lifecycle，不硬编码域 id），
+       * 所以直接复用，避免两处判断漂移。
+       */
       const allGroups = useMemo(
         function () {
-          const list = scope === 'user'
-            ? domains.filter(function (d) { return d.id !== 'assistant'; })
-            : scope === 'all'
-              ? domains
-              : domains.filter(function (d) { return d.id === scope; });
-          return list
-            .map(function (d) { return { domain: d, open: d.open || [], done: d.recentDone || [] }; })
-            .filter(function (g) { return g.open.length || g.done.length; });
+          return scopeDomains
+            .map(function (d) {
+              return { domain: d, open: d.open || [], done: d.recentDone || [], archived: d.archived || [] };
+            })
+            .filter(function (g) { return g.open.length || g.done.length || g.archived.length; });
         },
-        [domains, scope],
+        [scopeDomains],
       );
 
       const agenda = useMemo(
@@ -1760,14 +2955,42 @@ window.__ModuleLoader__.load({
         [scoped],
       );
 
-      const onView = useCallback(function (item) { setDetailItem(item); }, []);
+      /**
+       * 打开详情时，把**所属域的声明**挂到条目上。
+       *
+       * 条目本身只有值（status: 中标），不知道"这个域还有哪些值、完成值是哪个、
+       * 重开该退回什么"。这些都在域视图里，而详情弹层拿不到 self.snap，
+       * 所以在这里一次性拼好再传进去——否则弹层里要再查一遍域表，
+       * 每加一个用到域能力的功能就得改一处查找逻辑。
+       */
+      const onView = useCallback(
+        function (item) {
+          const list = (snap.data && snap.data.domains) || [];
+          const domain = list.find(function (d) {
+            return d.id === item.domain;
+          }) || {};
+          setDetailItem({
+            ...item,
+            // 域能力随条目一起带上，弹层直接用 item.xxx
+            statusValues: domain.statusValues || [],
+            statusDefault: domain.statusDefault || '',
+            doneValues: domain.doneValues || ['done'],
+            droppedValues: domain.droppedValues || ['dropped'],
+            promotesTo: domain.promotesTo || [],
+          });
+        },
+        [snap],
+      );
 
       /** 详情弹层内联保存：只发改动过的字段，避免覆盖别的属性 */
       const onSaveDetail = useCallback(
         async function (id, patch) {
           const body = { id: id };
-          if (patch.next !== undefined) body.next = patch.next;
-          if (patch.category !== undefined) body.category = patch.category;
+          // 逐个白名单透传：面板能改的字段都在这里列一遍。
+          // 漏一个的表现是"编辑框能打字、点保存提示已保存、重新打开还是旧值"。
+          for (const key of ['next', 'category', 'customer', 'bidNo', 'amount', 'profit']) {
+            if (patch[key] !== undefined) body[key] = patch[key];
+          }
           await request('/update', jsonBody(body));
           showToast(t('detail.saved'));
           await reload();
@@ -1777,11 +3000,10 @@ window.__ModuleLoader__.load({
         [reload, showToast, t],
       );
       const onToggleDone = useCallback(function (item) { toggleDone(item); }, [toggleDone]);
-      const onPromote = useCallback(function (item) { doPromote(item); }, [doPromote]);
+      const onPromote = useCallback(function (item, targetDomain) { doPromote(item, targetDomain); }, [doPromote]);
 
       const firstUse = all.length === 0;
-      const pendingCount = pendingItems.length;
-      const totalCount = scoped.length;
+      // pendingCount / totalCount 已在上面的 useMemo 里按正确口径算好，这里不再重复赋值
       const failed = !data && snap.phase === 'error';
       const headline = failed ? t('brand.name') : firstUse ? t('hero.calm') : pendingCount ? t('hero.attention') : t('hero.calm');
       const summary = failed
@@ -1822,7 +3044,29 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'sct-top-actions' },
-          h('span', { className: 'sct-sync', role: 'status' }, syncText),
+          h(
+            'button',
+            {
+              className: 'sct-action-btn',
+              type: 'button',
+              onClick: function () {
+                setSettings({
+                  open: true,
+                  time: (data && data.schedule && data.schedule.reminderAt) || '12:00',
+                  busy: false,
+                  error: '',
+                });
+              },
+            },
+            h(ControlIcon, { name: 'settings' }), t('action.settings'),
+          ),
+          h('button', { className: 'sct-action-btn', type: 'button', onClick: function () { reload(); } }, h(ControlIcon, { name: 'refresh' }), t('action.refresh')),
+          h('div', { className: 'sct-theme-switch', role: 'group', 'aria-label': t('theme.label') },
+            ['light', 'dark', 'system'].map((value) => h('button', {
+              key: value, type: 'button', 'aria-pressed': appearance.theme === value,
+              title: t('theme.' + value), 'aria-label': t('theme.' + value),
+              onClick: () => appearance.choose(value),
+            }, h(ControlIcon, { name: value }), h('span', null, t('theme.' + value))))),
           // 社区入口：只有 系统/社区.json 配了 http(s) 地址才出现，没配就不占位
           data && data.community
             ? h(
@@ -1838,22 +3082,7 @@ window.__ModuleLoader__.load({
                 h('span', { className: 'sct-community-arrow', 'aria-hidden': 'true' }, '↗'),
               )
             : null,
-          h('button', { className: 'ghost', onClick: function () { reload(); } }, t('action.refresh')),
-          h(
-            'button',
-            {
-              className: 'ghost',
-              onClick: function () {
-                setSettings({
-                  open: true,
-                  time: (data && data.schedule && data.schedule.reminderAt) || '12:00',
-                  busy: false,
-                  error: '',
-                });
-              },
-            },
-            t('action.settings'),
-          ),
+          h('span', { className: 'sct-sync', role: 'status' }, h(ControlIcon, { name: 'clock' }), syncText),
         ),
       );
 
@@ -1863,11 +3092,11 @@ window.__ModuleLoader__.load({
         h(
           'div',
           null,
-          h('div', { className: 'sct-eyebrow' }, longDate(new Date())),
+
           h('h1', null, headline),
           h('p', { className: 'sct-summary' }, summary),
         ),
-        h('span', { className: 'sct-hero-side' }, '知微 / 今日'),
+        h('time', { className: 'sct-hero-date' }, h(ControlIcon, { name: 'calendar' }), longDate(new Date())),
       );
 
       const captureChildren = [
@@ -1898,6 +3127,7 @@ window.__ModuleLoader__.load({
         h(
           'button',
           { key: 'save', className: 'primary sct-primary-btn', type: 'submit', disabled: quickBusy },
+          h(ControlIcon, { name: 'add' }),
           quickBusy ? t('quick.saving') : t('quick.save'),
         ),
       ];
@@ -2115,26 +3345,142 @@ window.__ModuleLoader__.load({
         { className: 'sct-tabs', role: 'tablist', 'aria-label': t('tab.list') },
         makeTab('pending', t('tab.pending'), pendingCount),
         makeTab('all', t('tab.all'), totalCount),
+        /**
+         * 客户台账页签：只在**确实有客户数据**时才出现。
+         * 一条客户都没有时显示一个空页签，用户会以为功能坏了。
+         */
+        customers.length ? makeTab('customers', t('tab.customers'), customers.length) : null,
       );
 
+      /**
+       * 范围按钮。
+       *
+       * **随页签变化**：
+       *   待办页   → 只有待办型域（task/project/stream），**没有经验库**
+       *   全部记录 → 全部域，经验库单独归组（虚线框 + 分隔点）
+       *
+       * 为什么待办页要整个去掉经验库按钮，而不是留着显示 0 条：
+       * 用户要的是"待办里没有助手域"。留一个点进去永远为空的按钮，
+       * 等于把"这个范围没有内容"的困惑留给用户。经验库的入口在全部记录页。
+       */
+      const isJournalDomain = function (d) { return d.lifecycle === 'journal'; };
+      const visibleDomains = tab === 'pending'
+        ? domains.filter(function (d) { return !isJournalDomain(d); })
+        : domains;
+
+      /**
+       * 范围筛选栏：**只有域按钮，没有"全部"**。
+       *
+       * 用户要求删掉那个按钮：它和旁边的域按钮并排，看着像一个域，
+       * 实际语义是"排除经验库之后的全部"，容易误读。
+       *
+       * 但 `'user'` 这个范围值本身**必须保留**：
+       *   · 它是初始默认值（useState('user')）——按钮删了，页面默认仍落在它上面
+       *   · 经验库范围被挡回时（切到待办页）也回落到它
+       * 所以现在它是**隐式默认范围**：没有任何按钮选中，代表"全看，但不含经验库"。
+       * 想只看某个域，点对应域按钮即可。
+       */
       const filter = h(
         'div',
         { className: 'sct-filter', role: 'group', 'aria-label': t('filter.label') },
-        h(
-          'button',
-          { type: 'button', 'aria-pressed': scope === 'user' ? 'true' : 'false', onClick: function () { setScope('user'); } },
-          t('filter.user'),
-        ),
-        domains.map(function (d) {
-          return h(
-            'button',
-            { key: d.id, type: 'button', 'aria-pressed': scope === d.id ? 'true' : 'false', onClick: function () { setScope(d.id); } },
-            d.name,
-          );
-        }),
+        /**
+         * 域按钮分两组渲染：待办型域与经验库。
+         * 视觉上分开是因为两者性质不同——左边是"要做什么"，右边是"以前踩过什么"。
+         * 用 lifecycle 判断而不是硬编码 id，自定义的 journal 域也自动归组。
+         */
+        (function () {
+          const todoDomains = visibleDomains.filter(function (d) { return !isJournalDomain(d); });
+          const journalDomains = visibleDomains.filter(isJournalDomain);
+          const makeBtn = function (d) {
+            return h(
+              'button',
+              { key: d.id, type: 'button', 'aria-pressed': effectiveScope === d.id ? 'true' : 'false', onClick: function () { setScope(d.id); } },
+              d.name,
+            );
+          };
+          const nodes = [];
+          todoDomains.forEach(function (d) { nodes.push(makeBtn(d)); });
+          if (journalDomains.length) {
+            nodes.push(h('span', { key: 'sep', className: 'sct-filter-sep', 'aria-hidden': 'true' }, '·'));
+            journalDomains.forEach(function (d) {
+              nodes.push(
+                h(
+                  'button',
+                  {
+                    key: d.id,
+                    type: 'button',
+                    className: 'sct-filter-journal',
+                    'aria-pressed': effectiveScope === d.id ? 'true' : 'false',
+                    title: t('filter.journalHint'),
+                    onClick: function () { setScope(d.id); },
+                  },
+                  d.name,
+                ),
+              );
+            });
+          }
+          return nodes;
+        })(),
       );
 
       let listContent;
+
+      /**
+       * 客户台账渲染：一张客户一张卡。
+       *
+       * 刻意**不显示成待办行**：台账不是待办，是回顾用的横向视图。
+       * 三个数字分开给（中标/未中标/在跟），因为它们回答不同的问题：
+       * 中标看业绩，未中标看投入，在跟看手头还有什么。
+       */
+      function customerCard(c) {
+        const bits = [];
+        if (c.wonCount) bits.push(fill(t('cust.won'), c.wonCount));
+        if (c.lostCount) bits.push(fill(t('cust.lost'), c.lostCount));
+        if (c.runningCount) bits.push(fill(t('cust.running'), c.runningCount));
+        if (c.visitCount) bits.push(fill(t('cust.visits'), c.visitCount));
+
+        return h(
+          'article',
+          { key: c.name, className: 'sct-customer' },
+          h(
+            'div',
+            { className: 'sct-customer-head' },
+            h('b', null, c.name),
+            c.contact ? h('span', { className: 'sct-customer-contact' }, c.contact) : null,
+          ),
+          h('div', { className: 'sct-customer-counts' }, bits.length ? bits.join(' · ') : t('cust.none')),
+          // 中标金额与利润率只在真的中过标时才显示，避免一排 0
+          c.wonCount
+            ? h(
+                'div',
+                { className: 'sct-customer-money' },
+                fill(t('cust.amount'), formatMoney(c.wonAmount)),
+                c.wonMargin != null ? ' · ' + fill(t('cust.margin'), c.wonMargin) : '',
+              )
+            : null,
+          c.running.length
+            ? h(
+                'div',
+                { className: 'sct-customer-list' },
+                h('span', { className: 'sct-customer-label' }, t('cust.runningList')),
+                c.running.map(function (r) {
+                  return h('span', { key: r.id, className: 'sct-chip' }, r.title);
+                }),
+              )
+            : null,
+          c.visits.length
+            ? h(
+                'div',
+                { className: 'sct-customer-list' },
+                h('span', { className: 'sct-customer-label' }, t('cust.visitList')),
+                c.visits.map(function (v) {
+                  return h('span', { key: v.id, className: 'sct-chip', title: v.excerpt || '' }, String(v.at || '').slice(5) + ' ' + v.title);
+                }),
+              )
+            : null,
+          c.lastVisitAt ? h('div', { className: 'sct-customer-note' }, fill(t('cust.lastVisit'), String(c.lastVisitAt).slice(0, 10))) : null,
+        );
+      }
 
       if (!data && snap.phase === 'error') {
         listContent = h(
@@ -2148,7 +3494,7 @@ window.__ModuleLoader__.load({
         listContent = h(Skeleton, null);
       } else if (search.trim()) {
         // 搜索态：直接展示命中结果，不分页签/分组——找东西时不该被层级打断
-        const hits = searchResult && searchResult.keyword === search.trim() ? searchResult.items : null;
+        const hits = searchResult && searchResult.keyword === search.trim() && searchResult.scope === effectiveScope ? searchResult.items : null;
         if (!hits) {
           listContent = h(Skeleton, null);
         } else if (searchResult && searchResult.error) {
@@ -2192,6 +3538,25 @@ window.__ModuleLoader__.load({
             ),
           );
         }
+      } else if (tab === 'customers') {
+        listContent = customers.length
+          ? h(
+              'div',
+              null,
+              h(
+                'div',
+                { className: 'sct-section-label' },
+                h('span', null, t('cust.title')),
+                h('span', null, fill(t('group.count'), customers.length)),
+              ),
+              h('div', { className: 'sct-customers' }, customers.map(customerCard)),
+            )
+          : h(
+              'div',
+              { className: 'sct-empty' },
+              h('h2', null, t('cust.emptyTitle')),
+              h('p', null, t('cust.emptyBody')),
+            );
       } else if (tab === 'pending') {
         // 优先级：有需要提醒的 → 分组列出；否则有在办记录 → 直接列出；都没有 → 空态
         if (pendingCount) {
@@ -2245,28 +3610,55 @@ window.__ModuleLoader__.load({
         listContent = allGroups.length
           ? allGroups.map(function (group) {
               const hidden = Math.max(0, (group.domain.doneCount ?? 0) - (group.done ?? []).length);
+              const archivedHidden = Math.max(
+                0,
+                (group.domain.archivedCount ?? 0) - (group.archived ?? []).length,
+              );
+              /**
+               * 经验教训库的域：标题行不能写"N 进行中 · 共 M"。
+               * 它没有"进行中"可言，讲条数与最近记录时间才是有用的信息。
+               */
+              const isJournal = group.domain.lifecycle === 'journal';
               const head = h(
                 'div',
                 { className: 'sct-section-label' },
                 h('span', null, (group.domain.icon || '') + ' ' + group.domain.name),
-                h('span', null, group.open.length + ' ' + t('group.open') + ' · ' + t('misc.total') + ' ' + group.domain.total),
+                h(
+                  'span',
+                  null,
+                  isJournal
+                    ? fill(t('group.journalCount'), group.domain.total)
+                    : group.open.length + ' ' + t('group.open') + ' · ' + t('misc.total') + ' ' + group.domain.total,
+                ),
               );
-              const rows = sortItems(group.open).concat(sortItems(group.done)).map(function (item) {
-                return h(TaskRow, {
-                  key: item.id,
-                  item: item,
-                  t: t,
-                  onView: onView,
-                  onReschedule: onReschedule,
-                  onToggleDone: onToggleDone,
-                });
-              });
+              /**
+               * 经验库按时间倒序（最近踩的坑在最上面），其余按用户选的排序。
+               *
+               * 经验库不能只渲染 `archived`：万一某条 journal 条目的 kind 是
+               * `open`（历史上按 task 形态建的、或将来 shape 变化），
+               * 只取 archived 会把它**静静丢掉**——用户在全部记录里也找不到。
+               * 所以 open + archived 合并渲染，archived 排在前面。
+               */
+              const journalRows = group.open.concat(group.archived);
+              const rows = isJournal
+                ? journalRows.map(function (item) {
+                    return h(TaskRow, {
+                      key: item.id, item: item, t: t,
+                      onView: onView, onReschedule: onReschedule, onToggleDone: onToggleDone,
+                    });
+                  })
+                : sortItems(group.open).concat(sortItems(group.done)).map(function (item) {
+                    return h(TaskRow, {
+                      key: item.id, item: item, t: t,
+                      onView: onView, onReschedule: onReschedule, onToggleDone: onToggleDone,
+                    });
+                  });
               const more =
-                hidden > 0
+                hidden > 0 || archivedHidden > 0
                   ? h(
                       'button',
-                      { className: 'sct-load-more', onClick: function () { setDoneLimit('all'); } },
-                      fill(t('group.loadMore'), hidden),
+                      { className: 'sct-load-more', type: 'button', onClick: function () { setDoneLimit('all'); } },
+                      fill(t('group.loadMore'), hidden + archivedHidden),
                     )
                   : null;
               return h('div', { key: group.domain.id }, head, h('div', { className: 'sct-tasks' }, rows), more);
@@ -2283,7 +3675,7 @@ window.__ModuleLoader__.load({
       const main = h(
         'main',
         { className: 'sct-main', ref: mainRef },
-        h('div', { className: 'sct-main-head' }, capture, tabs, filter, toolbar),
+        h('div', { className: 'sct-main-head' }, tabs, h('div', { className: 'sct-list-controls' }, filter, toolbar)),
         h(
           'div',
           {
@@ -2322,15 +3714,16 @@ window.__ModuleLoader__.load({
         ),
         h(
           'section',
-          { className: 'sct-side-block' },
+          { className: 'sct-side-block sct-reminder-card' },
           h('div', { className: 'sct-side-title' }, h('h2', null, t('aside.reminders'))),
           h(
             'div',
-            { className: 'sct-side-line' },
-            h('span', { className: 'muted' }, t('aside.remindTime')),
-            h('span', null, (data && data.schedule && data.schedule.reminderAt) || '12:00'),
+            { className: 'sct-reminder-time' },
+            h('span', { className: 'sct-reminder-time-label' }, h(ControlIcon, { name: 'clock' }), t('aside.remindTime')),
+            h('time', null, (data && data.schedule && data.schedule.reminderAt) || '12:00'),
           ),
           // 两个投递目标分别展示：提醒与报告可以各自绑在不同会话
+          h('div', { className: 'sct-delivery' },
           h(
             'div',
             { className: 'sct-conn', 'data-state': connectionState },
@@ -2348,31 +3741,30 @@ window.__ModuleLoader__.load({
           data && data.state && data.state.sameSession ? null : h('p', { className: 'sct-conn-note' }, t('conn.splitNote')),
           // 未绑定/失效时明确告诉用户：报告会停在这里等绑定
           connectionState !== 'bound' || reportConnState !== 'bound' ? h('p', { className: 'sct-conn-warn' }, t('conn.reportBlocked')) : null,
+          ),
           /**
            * B06：这里原来显示"报告处理窗口 22:00—06:00"，与真实调度不符——
            * 四类报告都在各自周期最后一天的设定时刻直接投递，**不受**夜间窗口推迟。
            * 现在改为逐条列出真实生成时间，与 系统/调度.json 完全一致。
            */
-          h(
-            'div',
-            { className: 'sct-side-line' },
-            h('span', { className: 'muted' }, t('aside.reportSchedule')),
-            h('span', null, (data && data.schedule && data.schedule.monthlyAt) || '20:00'),
-          ),
+          h('h3', { className: 'sct-report-heading' }, t('aside.reportSchedule')),
           h(
             'ul',
             { className: 'sct-report-list' },
-            h('li', null, fill(t('aside.reportMonthly'), (data && data.schedule && data.schedule.monthlyAt) || '20:00')),
-            h('li', null, fill(t('aside.reportQuarterly'), (data && data.schedule && data.schedule.quarterlyAt) || '20:00')),
-            h('li', null, fill(t('aside.reportHalf'), (data && data.schedule && data.schedule.halfAt) || '20:00')),
-            h('li', null, fill(t('aside.reportYearly'), (data && data.schedule && data.schedule.yearlyAt) || '20:00')),
+            [['reportMonthly', 'monthlyAt'], ['reportQuarterly', 'quarterlyAt'], ['reportHalf', 'halfAt'], ['reportYearly', 'yearlyAt']].map(function ([label, field]) {
+              return h('li', { key: field },
+                h('span', null, t('aside.' + label).replace('{t}', '')),
+                h('time', null, (data && data.schedule && data.schedule[field]) || '20:00'));
+            }),
           ),
           /* 错过的周期必须说出来：不自动补执行是规则，但"错过"不能悄悄消失。
              B06 同时要求"任务已提交"不能显示成"报告已生成"，这里只报事实。 */
           data && data.state && data.state.missedReports
             ? h('p', { className: 'sct-conn-warn' }, fill(t('aside.reportMissed'), data.state.missedReports, (data.state.missedKeys || []).join('、')))
             : null,
-          h('p', { className: 'sct-side-note' }, t('aside.reportNote')),
+          h('details', { className: 'sct-report-help' },
+            h('summary', null, t('aside.reportHelp')),
+            h('p', { className: 'sct-side-note' }, t('aside.reportNote'))),
         ),
         h(
           'section',
@@ -2395,6 +3787,16 @@ window.__ModuleLoader__.load({
           key: 'detail',
           item: detailItem,
           t: t,
+          // 域能力已经在 onView 里挂到 item 上了（statusValues/doneValues/promotesTo），
+          // 这里只传交互用的状态与回调
+          stagePick: stagePick,
+          stageBusy: stageBusy,
+          onStagePick: setStagePick,
+          onStageCommit: doStageCommit,
+          trackText: trackText,
+          trackBusy: trackBusy,
+          onTrackText: setTrackText,
+          onTrackCommit: doTrackCommit,
           onClose: function () { setDetailItem(null); },
           onReschedule: onReschedule,
           onToggleDone: onToggleDone,
@@ -2415,10 +3817,22 @@ window.__ModuleLoader__.load({
           key: 'promote',
           state: promote,
           t: t,
-          onCancel: function () { setPromote({ item: null, title: '', date: '', error: '', busy: false }); },
+          onCancel: function () {
+            setPromote({ item: null, targetDomain: '', targetName: '', title: '', targetTitle: '', date: '', error: '', busy: false });
+          },
           onConfirm: doPromote,
+          // 改日期/改名称都用整份展开再覆盖那一项。
+          // 早先是手写全部字段，漏一个（targetName、targetTitle）就会在交互中途被清空，
+          // 而且是静默的——用户只看到标题里的目标名突然没了。
           onDate: function (value) {
-            setPromote(function (prev) { return { item: prev.item, title: prev.title, date: value, error: '', busy: false }; });
+            setPromote(function (prev) {
+              return { ...prev, date: value, error: '', busy: false };
+            });
+          },
+          onTitle: function (value) {
+            setPromote(function (prev) {
+              return { ...prev, targetTitle: value, error: '', busy: false };
+            });
           },
         }),
         h(SettingsDrawer, {
@@ -2431,6 +3845,20 @@ window.__ModuleLoader__.load({
             setSettings(function (prev) { return { open: true, time: value, busy: false, error: '' }; });
           },
         }),
+        // 「完成并记录」小框：item 非空才渲染
+        h(DoneDrawer, {
+          key: 'done',
+          state: donePrompt,
+          t: t,
+          onCancel: function () {
+            setDonePrompt({ item: null, text: '', error: '', busy: false });
+          },
+          onConfirm: confirmDone,
+          onSilent: confirmDoneSilent,
+          onText: function (value) {
+            setDonePrompt(function (prev) { return { ...prev, text: value, error: '' }; });
+          },
+        }),
       ];
 
       const toastNode = toast
@@ -2439,9 +3867,17 @@ window.__ModuleLoader__.load({
 
       return h(
         'div',
-        { className: 'sct-root' },
+        { className: 'sct-root', 'data-theme': appearance.resolved, 'data-theme-mode': appearance.theme },
         topbar,
-        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, hero, h('div', { className: 'sct-layout' }, main, aside))),
+        /**
+         * 顺序必须是 **main 在前、aside 在后**。
+         *
+         * CSS 里 `grid-template-columns: minmax(0,1fr) var(--zw-aside-w)`
+         * 把第一列给主区、第二列给辅助区；DOM 顺序若反过来，
+         * 辅助区会占据主列（实测表现为：左边一大块空白 + 内容挤到右侧一窄条），
+         * 而且窄屏单栏时辅助区会跑到主区**上面**。
+         */
+        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, hero, capture, h('div', { className: 'sct-layout' }, main, aside))),
         drawers,
         toastNode,
       );
