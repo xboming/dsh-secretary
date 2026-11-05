@@ -214,7 +214,7 @@ window.__ModuleLoader__.load({
 .sct-section-label:first-of-type{margin-top:8px}
 .sct-tasks{display:flex;flex-direction:column;gap:10px}
 /* 专用控件统一用 .sct-root .sct-x（0,2,0）压过基础规则（0,1,0）——U04。
-   完成控件必须是 24×24 的圆，标题必须是**看起来像文字**的入口：
+   完成控件使用独立样式，标题必须是**看起来像文字**的入口：
    两者都要显式清掉基础规则的 background/border/padding/min-height。 */
 .sct-root .sct-check{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-height:24px;padding:0;margin-top:2px;border-radius:50%;border:1px solid var(--zw-line-strong);background:transparent;color:var(--zw-muted);font-size:12px;line-height:1;position:relative;transition:border-color .13s,background .13s,color .13s}
 /* 未完成的圆圈是**可点的控件边界**，必须达到 3:1（6.2）。
@@ -229,6 +229,15 @@ window.__ModuleLoader__.load({
 /* 经验教训库：方形入口 + 中性色，与"可勾选的圆"明确区分，暗示它不是动作 */
 .sct-root .sct-check[data-shape="archive"]{border-radius:6px;border-color:var(--zw-line-strong);color:var(--zw-muted);font-size:13px}
 .sct-root .sct-check:focus-visible{outline:2px solid var(--zw-focus);outline-offset:3px}
+/* 完成操作：紧凑圆角方框；悬停预览勾，完成后实心勾。 */
+.sct-root .sct-check[data-shape="task"]{width:22px;height:22px;min-height:22px;margin-top:1px;border:1.5px solid var(--zw-muted);border-radius:6px;background:var(--zw-surface);color:var(--zw-accent);appearance:none;transition:background .15s,border-color .15s,color .15s}
+.sct-root .sct-check[data-shape="task"]::before{inset:-11px;border-radius:10px}
+.sct-root .sct-check .sct-check-mark{width:14px;height:14px;stroke-width:2.4;opacity:0;transition:opacity .15s;pointer-events:none}
+.sct-root .sct-check[data-shape="task"]:is(:hover,:focus-visible){border-color:var(--zw-accent);background:var(--zw-accent-soft)}
+.sct-root .sct-check[data-shape="task"]:is(:hover,:focus-visible) .sct-check-mark{opacity:.65}
+.sct-root .sct-check[data-shape="task"][data-done="true"]{background:var(--zw-accent);border-color:var(--zw-accent);color:var(--zw-accent-text)}
+.sct-root .sct-check[data-shape="task"][data-done="true"] .sct-check-mark{opacity:1}
+
 .sct-root .sct-task-title{display:block;width:100%;background:none;border:0;padding:1px 2px;margin:-1px -2px;min-height:0;border-radius:4px;text-align:left;font-size:15px;font-weight:600;line-height:1.5;color:var(--zw-text);white-space:normal;overflow-wrap:anywhere}
 .sct-root .sct-task-title:hover{background:var(--zw-hover);color:var(--zw-text)}
 .sct-root .sct-task-title:focus-visible{outline:2px solid var(--zw-focus);outline-offset:2px}
@@ -384,7 +393,7 @@ window.__ModuleLoader__.load({
 .sct-root ::selection{background:var(--zw-accent-soft);color:var(--zw-text)}
 .sct-topbar{min-height:76px;padding:14px 32px;background:var(--zw-surface);max-width:none;gap:12px}
 .sct-brand{gap:10px;flex-shrink:0}
-.sct-root .sct-brandmark{width:38px;height:38px;padding:5px;color:var(--zw-accent)}
+.sct-root .sct-brandmark{width:38px;height:38px;padding:3px;color:var(--zw-accent);stroke-width:1.8}
 .sct-brand strong{font-size:17px;letter-spacing:1px;line-height:1.5}
 .sct-brand p{font-size:11px}
 .sct-top-actions{gap:8px;flex-wrap:wrap;justify-content:flex-end}
@@ -1304,14 +1313,18 @@ window.__ModuleLoader__.load({
       };
     }
 
+    // 与 icon.svg 共用 24px 几何；侧栏继承宿主文字色，页头继承主题操作色。
     function BrandMark(props) {
       const size = (props && props.size) || 38;
       const className = props && props.className != null ? props.className : 'sct-brandmark';
       return h(
         'svg',
-        { className: className, width: size, height: size, viewBox: '0 0 40 40', 'aria-hidden': 'true' },
-        h('path', { d: 'm20 4 1.8 5.3L27 11l-5.2 1.8L20 18l-1.8-5.2L13 11l5.2-1.7Z' }),
-        h('path', { d: 'M5 23c5-7 10 7 15 0s10 7 15 0M5 29c5-7 10 7 15 0s10 7 15 0M10 35c5-5 8 4 13 0s7 0 7 0' }),
+        { className, width: size, height: size, viewBox: '0 0 24 24',
+          fill: 'none', stroke: 'currentColor', strokeWidth: 1.8,
+          strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': 'true' },
+        h('path', { d: 'M11.5 3.5H6A2.5 2.5 0 0 0 3.5 6v12A2.5 2.5 0 0 0 6 20.5h11a2.5 2.5 0 0 0 2.5-2.5v-4.5' }),
+        h('path', { d: 'M7.5 8.5H9M7.5 12.5H11M7.5 16.5H15' }),
+        h('path', { d: 'm13.5 6.5 3 3 5-5.5' }),
       );
     }
 
@@ -1462,7 +1475,7 @@ window.__ModuleLoader__.load({
 
       /**
        * 经验教训库（lifecycle=journal）的条目没有"完成/重开/改期"这些动作。
-       * 不能只把按钮藏起来——勾选圆圈本身也得换成纯展示的符号，
+       * 不能只把按钮藏起来——完成按钮本身也得换成查看入口符号，
        * 否则用户点下去什么都不会发生，比不显示更糟。
        * `archived` 已在上方随 meta 一起算好，这里直接复用。
        */
@@ -1484,7 +1497,8 @@ window.__ModuleLoader__.load({
                 'aria-label': done ? t('action.reopen') + '：' + item.title : t('action.done') + '：' + item.title,
                 onClick: function () { props.onToggleDone(item); },
               },
-              done ? '✓' : '',
+              h('svg', { className: 'sct-check-mark', viewBox: '0 0 20 20', 'aria-hidden': 'true' },
+                h('path', { d: 'm4 10 4 4 8-8' })),
             )
           : h(
               // 非动作元素：经验条目/Idea 用符号标记，点击等同"查看"
@@ -1785,7 +1799,12 @@ window.__ModuleLoader__.load({
        * 只允许单向走一格反而碍事。
        */
       const statusValues = Array.isArray(item.statusValues) ? item.statusValues : [];
-      const canAdvance = !archived && item.shape === 'task' && statusValues.length > 1;
+      /**
+       * 项目形态（创作）也有多个阶段值，快照已经把它下发的就是 stage 那套
+       * （见 secretary.js 的 statusValues 分支），所以这里不必排除 project——
+       * 早先只放行 task，导致创作详情里根本没有"推进阶段"，只能靠完成按钮跳两格。
+       */
+      const canAdvance = !archived && (item.shape === 'task' || item.shape === 'project') && statusValues.length > 1;
       const stageSection = canAdvance
         ? h(
             'section',
@@ -1885,11 +1904,11 @@ window.__ModuleLoader__.load({
       /**
        * 「标记完成」按域声明的完成值走。
        *
-       * 工作域 doneValues=['done'] → 目标值 done
-       * 销售域 doneValues=['中标'] → 目标值 中标
+       * 事务域 doneValues=['已完成'] → 目标值 已完成
+       * 销售域 doneValues=['中标']   → 目标值 中标
        * 已经是完成态就不显示这个按钮。
        */
-      const doneValues = Array.isArray(item.doneValues) && item.doneValues.length ? item.doneValues : ['done'];
+      const doneValues = Array.isArray(item.doneValues) && item.doneValues.length ? item.doneValues : ['已完成'];
       const doneButtonTarget = !done && item.shape === 'task' ? doneValues[0] : null;
       const convertSection = promoteTargets.length
         ? h(
@@ -1946,9 +1965,11 @@ window.__ModuleLoader__.load({
              *
              * 原实现无脑写 status: 'done'，而销售域没有这个值——
              * 点一下直接 500，用户还以为是坏了。现在：
-             *   - 工作域：doneValues=['done'] → 按钮写「标记完成」
-             *   - 销售域：doneValues=['中标'] → 按钮写「标记中标」
+             *   - 事务域：doneValues=['已完成'] → 按钮写「标记完成」
+             *   - 销售域：doneValues=['中标']   → 按钮写「标记中标」
              * 按钮文案也按目标值走，用户点之前就知道会发生什么。
+             * `action.done`（完成）只在完成值恰好就是通用说法时用，
+             * 其余一律「标记为 X」，免得同一个按钮在域之间说法不一。
              */
             doneButtonTarget
               ? h(
@@ -1960,7 +1981,7 @@ window.__ModuleLoader__.load({
                       props.onToggleDone(item);
                     },
                   },
-                  doneButtonTarget === 'done' ? t('action.done') : fill(t('detail.markAs'), doneButtonTarget),
+                  fill(t('detail.markAs'), doneButtonTarget),
                 )
               : null,
           );
@@ -2469,7 +2490,18 @@ window.__ModuleLoader__.load({
           const body = { id: item.id };
           // 重开必须落到非完成状态：item.status 此刻就是完成值，回填它会再提交一次完成
           if (item.shape === 'project') {
-            body.stage = wasDone ? 'revising' : 'done';
+            /**
+             * 创作（project 形态）阶段现在是汉字，且完成/终止值同样由域声明给出
+             * （完成 / 搁置）。这里原来写死 'revising' / 'done'：
+             *   - 重开回填 'revising' 是**创作专属的英文值**，改中文后不再合法；
+             *   - 完成写 'done' 在汉字枚举里同样非法。
+             * 现在一并用快照下发的默认阶段与完成值，域改词面板不用跟着改。
+             */
+            const stageDefaults = Array.isArray(item.statusValues) ? item.statusValues : [];
+            const stageDone = Array.isArray(item.doneValues) && item.doneValues.length ? item.doneValues[0] : null;
+            const stageReopen = item.statusDefault || stageDefaults[0] || '';
+            body.stage = wasDone ? stageReopen : stageDone;
+            if (!body.stage) delete body.stage;
           } else {
             /**
              * 完成值**按域声明**取，不再硬编码。
@@ -2477,12 +2509,12 @@ window.__ModuleLoader__.load({
              * 原实现无脑写 'done'，但销售域的完成值是「中标」——
              * 点一下直接 500（后端校验会拒），用户以为是坏了。
              * 现在：
-             *   完成 → 域声明的第一个完成值（工作 done / 销售 中标）
-             *   重开 → 域声明的默认值（工作 todo / 销售 商机）
-             * 后者不写死 'doing'：销售域没有 doing，写了同样报错。
+             *   完成 → 域声明的第一个完成值（事务 已完成 / 销售 中标）
+             *   重开 → 域声明的默认值（事务 待办 / 销售 商机）
+             * 后者不写死 '进行中'：销售域没有这个值，写了同样报错。
              */
-            const doneValues = Array.isArray(item.doneValues) && item.doneValues.length ? item.doneValues : ['done'];
-            const defaultValue = item.statusDefault || 'todo';
+            const doneValues = Array.isArray(item.doneValues) && item.doneValues.length ? item.doneValues : ['已完成'];
+            const defaultValue = item.statusDefault || '待办';
             body.status = wasDone ? defaultValue : doneValues[0];
           }
           /**
@@ -2584,10 +2616,13 @@ window.__ModuleLoader__.load({
       );
 
       /**
-       * 推进阶段：写 status，时间轴自动多一条。
+       * 推进阶段：task 形态写 status，project 形态（创作）写 stage。
        *
-       * 不新建条目——这几个阶段始终是**同一条商机**在往前走。
+       * 不新建条目——这几个阶段始终是**同一条记录**在往前走。
        * 成功后关掉详情：记录变了，旧对象是陈的，让用户从列表重新点开。
+       *
+       * 字段名按形态选，不能一律发 status：创作的阶段存在 stage 里，
+       * 把「起草」当 status 发过去会被后端当作非法状态值拒掉。
        */
       const doStageCommit = useCallback(
         async function (item, value) {
@@ -2599,7 +2634,10 @@ window.__ModuleLoader__.load({
           }
           setStageBusy(true);
           try {
-            await request('/update', jsonBody({ id: item.id, status: target }));
+            const body = { id: item.id };
+            if (item.shape === 'project') body.stage = target;
+            else body.status = target;
+            await request('/update', jsonBody(body));
             showToast(fill(t('stage.done'), target));
             setStagePick('');
             setDetailItem(null);
@@ -2984,8 +3022,8 @@ window.__ModuleLoader__.load({
             // 域能力随条目一起带上，弹层直接用 item.xxx
             statusValues: domain.statusValues || [],
             statusDefault: domain.statusDefault || '',
-            doneValues: domain.doneValues || ['done'],
-            droppedValues: domain.droppedValues || ['dropped'],
+            doneValues: domain.doneValues || ['已完成'],
+            droppedValues: domain.droppedValues || ['已放弃'],
             promotesTo: domain.promotesTo || [],
           });
         },
