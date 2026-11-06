@@ -10,6 +10,25 @@ window.__ModuleLoader__.load({
     const THEME_KEY = NS + ':theme';
     const validTheme = (value) => ['light', 'dark', 'system'].includes(value) ? value : 'system';
 
+    /**
+     * 金额缩写（前端版）。
+     *
+     * 后端 lib/board.js 有一份同样的实现，但客户端跑在浏览器里，
+     * 引不到后端模块——两边各留一份是必然的。
+     * 口径必须一致（万以下给原数、超过 100 万取整），所以这里照抄，
+     * 改的时候两边一起改。测试 review-board.mjs 会锁住后端那份的行为。
+     */
+    function compactMoney(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return '0';
+      const abs = Math.abs(n);
+      if (abs === 0) return '0';
+      if (abs < 10000) return String(Math.round(n));
+      const wan = n / 10000;
+      const shown = Math.abs(wan) >= 100 ? Math.round(wan) : Math.round(wan * 10) / 10;
+      return shown + '万';
+    }
+
     function useTheme() {
       const [theme, setTheme] = useState(function () {
         try { return validTheme(window.localStorage.getItem(THEME_KEY)); } catch { return 'system'; }
@@ -181,7 +200,21 @@ window.__ModuleLoader__.load({
 }
 .sct-shell{max-width:var(--zw-shell-max);margin:0 auto;padding:0 var(--zw-shell-pad);width:100%;flex:1;min-height:0;display:flex;flex-direction:column;min-width:0}
 .sct-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:36px 0 28px;flex:none}
-.sct-eyebrow{font-size:12px;color:var(--zw-muted);letter-spacing:.4px;margin-bottom:10px}
+/* 数据看板：顶部常驻一行四格。数值用等宽数字，位数变化时不会左右跳 */
+.sct-board{display:flex;gap:0;flex:none;margin:0 0 18px;border:1px solid var(--zw-line);border-radius:10px;overflow:hidden;background:var(--dsw-alias-bg-layer-1)}
+.sct-board-cell{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;padding:11px 14px;border-right:1px solid var(--zw-line);white-space:nowrap;overflow:hidden}
+.sct-board-cell:last-child{border-right:0}
+.sct-board-key{font-size:11.5px;color:var(--zw-muted);flex:none}
+.sct-board-cell strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis}
+.sct-board-alert strong{color:var(--zw-danger)}
+.sct-board-warn strong{color:var(--zw-warning)}
+/* 窄屏：四格改两行，避免每格被压到只剩省略号 */
+@media (max-width:620px){
+  .sct-board{flex-wrap:wrap}
+  .sct-board-cell{flex:1 1 50%;border-right:1px solid var(--zw-line)}
+  .sct-board-cell:nth-child(2n){border-right:0}
+  .sct-board-cell:nth-child(-n+2){border-bottom:1px solid var(--zw-line)}
+}.sct-eyebrow{font-size:12px;color:var(--zw-muted);letter-spacing:.4px;margin-bottom:10px}
 .sct-hero h1{font-size:30px;line-height:1.35;font-weight:600;letter-spacing:-.6px;overflow-wrap:anywhere}
 .sct-summary{margin-top:8px;color:var(--zw-muted);font-size:14px;overflow-wrap:anywhere}
 .sct-hero-side{font-size:12px;color:var(--zw-muted);white-space:nowrap}
@@ -745,6 +778,14 @@ window.__ModuleLoader__.load({
         'tab.pending': '待办事项',
         'tab.all': '全部记录',
         'tab.customers': '客户台账',
+        // 数据看板：顶部常驻摘要条的四格
+        'board.label': '数据看板',
+        'board.open': '在办',
+        'board.outstanding': '待收',
+        'board.overdue': '逾期',
+        'board.risk': '风险',
+        'board.noOverdue': '没有逾期回款',
+        'board.noRisk': '没有需要处理的风险项',
         'cust.title': '客户台账',
         'cust.won': '中标 {n}',
         'cust.lost': '未中标 {n}',
@@ -961,6 +1002,14 @@ window.__ModuleLoader__.load({
         'tab.pending': 'To-do',
         'tab.all': 'All records',
         'tab.customers': 'Customers',
+        // Data board: the four cells of the persistent summary bar
+        'board.label': 'Data board',
+        'board.open': 'Open',
+        'board.outstanding': 'Receivable',
+        'board.overdue': 'Overdue',
+        'board.risk': 'Risks',
+        'board.noOverdue': 'No overdue payments',
+        'board.noRisk': 'No risks to handle',
         'cust.title': 'Customer ledger',
         'cust.won': 'Won {n}',
         'cust.lost': 'Lost {n}',
@@ -3189,6 +3238,76 @@ window.__ModuleLoader__.load({
         ),
       );
 
+      /**
+       * 顶部常驻摘要条：一行四格。
+       *
+       * ── 为什么不放进页签 ──
+       * 看板的价值在"随时瞄一眼就知道整体什么形态"。放进页签就得先点开，
+       * 那和报告没区别了。所以压成一行常驻在顶部。
+       *
+       * ── 为什么只四格 ──
+       * 这行高度固定，多一格挤一分，挤到后面没人看。只留"变了就该动手"的：
+       * 待收的钱、逾期的钱、在办、风险。其余细节放 title 属性，悬停才看。
+       *
+       * ── 全部为空时不显示 ──
+       * 一排零比不显示更吵，反而训练用户忽略这块区域。
+       */
+      const board = (data && data.board) || null;
+      const boardSummary = board && board.summary ? board.summary : null;
+      const boardHasAnything = Boolean(
+        boardSummary && (boardSummary.open || boardSummary.outstanding || boardSummary.overdueAmount || boardSummary.riskCount),
+      );
+
+      const boardBar = boardHasAnything
+        ? h(
+            'div',
+            { className: 'sct-board', role: 'group', 'aria-label': t('board.label') },
+            h(
+              'span',
+              {
+                className: 'sct-board-cell',
+                title: `${t('board.open')}：${boardSummary.open} 条在办事项`,
+              },
+              h('span', { className: 'sct-board-key' }, t('board.open')),
+              h('strong', null, String(boardSummary.open)),
+            ),
+            h(
+              'span',
+              {
+                className: 'sct-board-cell',
+                title: `${t('board.outstanding')}：应收 ${board.payments.receivable} 元，已收 ${board.payments.received} 元，本月该收 ${board.payments.dueThisMonth} 元`,
+              },
+              h('span', { className: 'sct-board-key' }, t('board.outstanding')),
+              h('strong', null, compactMoney(boardSummary.outstanding)),
+            ),
+            h(
+              'span',
+              {
+                className: boardSummary.overdueAmount > 0 ? 'sct-board-cell sct-board-alert' : 'sct-board-cell',
+                title:
+                  boardSummary.overdueAmount > 0
+                    ? `逾期 ${board.payments.overdueCount} 期，涉及 ${board.payments.contractsWithOverdue} 份合同；最久 ${board.payments.overdue[0] ? board.payments.overdue[0].days + ' 天' : '—'}`
+                    : t('board.noOverdue'),
+              },
+              h('span', { className: 'sct-board-key' }, t('board.overdue')),
+              h(
+                'strong',
+                null,
+                boardSummary.overdueAmount > 0 ? compactMoney(boardSummary.overdueAmount) : '—',
+              ),
+            ),
+            h(
+              'span',
+              {
+                className: boardSummary.riskCount > 0 ? 'sct-board-cell sct-board-warn' : 'sct-board-cell',
+                title: (board.risks || []).map((r) => `${r.label} ${r.count}`).join('｜') || t('board.noRisk'),
+              },
+              h('span', { className: 'sct-board-key' }, t('board.risk')),
+              h('strong', null, boardSummary.riskCount > 0 ? String(boardSummary.riskCount) : '—'),
+            ),
+          )
+        : null;
+
       const hero = h(
         'section',
         { className: 'sct-hero' },
@@ -3980,7 +4099,7 @@ window.__ModuleLoader__.load({
          * 辅助区会占据主列（实测表现为：左边一大块空白 + 内容挤到右侧一窄条），
          * 而且窄屏单栏时辅助区会跑到主区**上面**。
          */
-        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, hero, capture, h('div', { className: 'sct-layout' }, main, aside))),
+        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, hero, boardBar, capture, h('div', { className: 'sct-layout' }, main, aside))),
         drawers,
         toastNode,
       );
