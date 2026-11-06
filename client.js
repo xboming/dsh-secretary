@@ -1052,6 +1052,8 @@ window.__ModuleLoader__.load({
         /* 经验教训库：说明它能做什么，替代不存在的"完成/改期"按钮 */
         'detail.archivedNote': '经验教训库的条目没有「完成」和「改期」——它记的是踩过的坑与对应的约束，不是待办。要补充后续，用「编辑」写进下一步或备注。',
         'group.journalCount': '共 {n} 条经验',
+        // 分组标题里的"共 N 条"（如「进行中 · 共 5」）
+        'misc.total': '共',
         'quick.placeholder': '记下一件事，或一个刚出现的想法…',
         'quick.domainLabel': '记录所属域',
         'quick.contentLabel': '记录内容',
@@ -1161,6 +1163,8 @@ window.__ModuleLoader__.load({
         'aside.reportNote': '四类报告都在各自周期最后一天按上面时间开始生成，生成的是当期数据，不会被夜间窗口推迟。若那一刻 DSH 没开着，之后不会自动补跑——在对话里说「补一份 2026-09 月报」即可手动生成。',
         'aside.reportMissed': '有 {n} 期错过了自动生成，需要手动补：{k}',
         'aside.calendar': '{y} 年 {m} 月',
+        // 月历标题：没有具体月份时显示（month 为空的分支）
+        'aside.calendarTitle': '月历',
         'aside.expand': '展开月历 ＋',
         'aside.collapse': '收起月历 −',
         'aside.calendarMissing': '节假日数据缺失，按周末近似显示',
@@ -1285,6 +1289,7 @@ window.__ModuleLoader__.load({
         'detail.archivedNote':
           'Lessons have no "done" or "reschedule" — they record a pitfall and its constraint, not a to-do. Use Edit to add follow-ups to the next step or notes.',
         'group.journalCount': '{n} lesson(s)',
+        'misc.total': 'total',
         'quick.placeholder': 'A task, or a just-appeared idea…',
         'quick.domainLabel': 'Record domain',
         'quick.contentLabel': 'Record content',
@@ -1390,6 +1395,7 @@ window.__ModuleLoader__.load({
         'aside.reportNote': 'All four report types start on the last day of their own period at the time shown, covering that period — they are never pushed to a night window. If DSH is closed at that moment it will not catch up later; ask in chat to regenerate one manually.',
         'aside.reportMissed': '{n} period(s) missed auto-generation; regenerate manually: {k}',
         'aside.calendar': '{y}/{m}',
+        'aside.calendarTitle': 'Calendar',
         'aside.expand': 'Calendar ＋',
         'aside.collapse': 'Calendar −',
         'aside.calendarMissing': 'Holiday data missing — approximating by weekends',
@@ -4891,7 +4897,7 @@ window.__ModuleLoader__.load({
          * 辅助区会占据主列（实测表现为：左边一大块空白 + 内容挤到右侧一窄条），
          * 而且窄屏单栏时辅助区会跑到主区**上面**。
          */
-        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, hero, boardBar, capture, h('div', { className: 'sct-layout' }, main, aside))),
+        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, hero, capture, h('div', { className: 'sct-layout' }, main, aside))),
         drawers,
         toastNode,
       );
