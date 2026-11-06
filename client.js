@@ -1749,6 +1749,16 @@ window.__ModuleLoader__.load({
           )
         : null;
 
+      /**
+       * 时间轴。
+       *
+       * 详情弹层拿到的是**全量**（经 /entry），列表里那条只带 8 条——
+       * 所以这里不截断，用户记了多少就显示多少。
+       *
+       * 原话是多行的（「记一条跟踪」里换行写，落盘时每行一个 `>`）：
+       * 靠 CSS 的 whitespace:pre-wrap 保留换行，不要在这里 split 再拼 <br>，
+       * 那会把连续的空白也一起吃掉。
+       */
       const timelineSection = timeline.length
         ? h(
             'section',
@@ -2509,13 +2519,25 @@ window.__ModuleLoader__.load({
              * 原实现无脑写 'done'，但销售域的完成值是「中标」——
              * 点一下直接 500（后端校验会拒），用户以为是坏了。
              * 现在：
-             *   完成 → 域声明的第一个完成值（事务 已完成 / 销售 中标）
-             *   重开 → 域声明的默认值（事务 待办 / 销售 商机）
+             *   完成 → 域声明的第一个完成值（事务 已完成 / 项目销售 已中标）
+             *   重开 → 域声明的默认值（事务 待办 / 项目销售 初期阶段）
              * 后者不写死 '进行中'：销售域没有这个值，写了同样报错。
+             *
+             * ── 两轴的域必须写到 doneField ──
+             * 项目销售有两头轴：status 装阶段、awardStatus 装是否中标。
+             * 完成值（已中标）在**第二条轴**上，写进 status 会被后端拒
+             * （阶段枚举里没有这个值）。所以这里按 item.doneField 决定写哪个键。
+             * 重开同理：完成轴回默认值，阶段不动——阶段是它自己的进度，不该被重开重置。
              */
             const doneValues = Array.isArray(item.doneValues) && item.doneValues.length ? item.doneValues : ['已完成'];
-            const defaultValue = item.statusDefault || '待办';
-            body.status = wasDone ? defaultValue : doneValues[0];
+            const doneField = typeof item.doneField === 'string' && item.doneField ? item.doneField : 'status';
+            if (doneField === 'status') {
+              const defaultValue = item.statusDefault || '待办';
+              body.status = wasDone ? defaultValue : doneValues[0];
+            } else {
+              // 第二条轴：完成 → 完成值；重开 → 这条轴的默认值（未定）
+              body[doneField] = wasDone ? (item.doneDefault || '未定') : doneValues[0];
+            }
           }
           /**
            * 只有用户真的写了内容才传 quote。
@@ -3012,20 +3034,42 @@ window.__ModuleLoader__.load({
        * 每加一个用到域能力的功能就得改一处查找逻辑。
        */
       const onView = useCallback(
-        function (item) {
+        async function (item) {
           const list = (snap.data && snap.data.domains) || [];
           const domain = list.find(function (d) {
             return d.id === item.domain;
           }) || {};
-          setDetailItem({
-            ...item,
-            // 域能力随条目一起带上，弹层直接用 item.xxx
-            statusValues: domain.statusValues || [],
-            statusDefault: domain.statusDefault || '',
-            doneValues: domain.doneValues || ['已完成'],
-            droppedValues: domain.droppedValues || ['已放弃'],
-            promotesTo: domain.promotesTo || [],
-          });
+          const withDomain = function (base) {
+            return {
+              ...base,
+              // 域能力随条目一起带上，弹层直接用 item.xxx
+              statusValues: domain.statusValues || [],
+              statusDefault: domain.statusDefault || '',
+              // 第二条轴（项目销售的 awardStatus）：默认值与完成值分开给，
+              // "重开"要写回默认值，不能沿用完成值
+              doneDefault: domain.doneDefault || '',
+              doneValues: domain.doneValues || ['已完成'],
+              droppedValues: domain.droppedValues || ['已放弃'],
+              promotesTo: domain.promotesTo || [],
+            };
+          };
+          // 先用快照那条把弹层打开（秒开，不闪空白）
+          setDetailItem(withDomain(item));
+          /**
+           * 再向服务端要**全量时间轴**。
+           *
+           * 快照为了体积每条只带 8 条时间轴，用户在详情页翻自己记过的内容时，
+           * 第 9 条以后就看不到了——文件里明明有。这里补一次单条拉取。
+           *
+           * 失败就不动：弹层继续显示快照那版（有 8 条总比空白强），
+           * 不要把已经打开的详情关掉。
+           */
+          try {
+            const data = await request('/entry?id=' + encodeURIComponent(item.id));
+            if (data && data.item) setDetailItem(withDomain(data.item));
+          } catch {
+            /* 保留快照版本即可 */
+          }
         },
         [snap],
       );
