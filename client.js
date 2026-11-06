@@ -219,231 +219,153 @@ window.__ModuleLoader__.load({
  * 进而把整个网格挤出容器。minmax(0,1fr) 才允许真正压缩。
  */
 
-/* ── 统计图 ── */
+/* ── 数据看板：五个标签 + 五张图 ── */
 
 /*
- * 竖向柱状图：柱顶直接写数值，柱下写标签。
+ * 看板页：**固定一屏不滚动**。
  *
- * 高度用 clamp 跟着窗口走，不写死 px：
- *   矮屏（笔记本可用高约 470px）压到 62px，柱子还不至于看不见；
- *   高屏最多 110px，再高就浪费——它是概览，不是精确图表。
- * 数值行和标签行是 flex:none，柱子区 flex:1，所以柱子被压缩时
- * **数字永远还在**，不会跟着柱子一起消失。
- */
-.sct-chart-bar{display:flex;align-items:stretch;gap:10px;flex:none;height:clamp(62px,9vh,110px);overflow:hidden}
-.sct-chart-bar.is-sm{height:clamp(56px,8vh,96px)}
-/*
- * 漏斗区整体：柱状图 + 下面的金额条。
- * 两者用 gap 隔开，避免标签行和金额行贴在一起（实测会重叠）。
- */
-.sct-funnel-wrap{display:flex;flex-direction:column;gap:6px;min-width:0}
-/*
- * 每列是"数值 / 柱子 / 标签"三段竖排。
+ * 3 行结构：
+ *   1. 时间窗口切换条
+ *   2. 五个数据标签（横排）
+ *   3. 五张图（网格：上排三张，下排两张）
  *
- * ── 为什么整列要固定高度、柱子段吃剩余 ──
- * 只给外层 .sct-chart-bar 定高、列内用 height:100% 时，
- * 三段的自然高度之和可能超过容器，超出部分**溢出到容器外**，
- * 压住下面那一行（实测就是标签和金额条重叠）。
- * 改成：整列 height:100%，数值行与标签行 flex:none 固定，
- * 柱子段 flex:1 + min-height:0 吸收剩余——三段就都被关在容器里。
+ * 为什么不滚动：这页是"扫一眼看整体"的，需要滚动就意味着
+ * 第一屏看到的东西不完整，用户还得往下找。
  */
-.sct-cbar-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;overflow:hidden}
-/* 数值始终在柱子上方，柱子再高也不会被挤掉 */
-.sct-cbar-value{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--zw-text);line-height:1;white-space:nowrap;flex:none;height:12px;display:flex;align-items:flex-end}
-.sct-cbar-value.is-alert{color:var(--zw-danger)}
-/* 柱子段：吸收剩余高度；min-height:0 是它能被压缩的关键 */
-.sct-cbar-track{width:100%;flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center}
-.sct-cbar-fill{width:min(100%,30px);background:var(--zw-accent);border-radius:3px 3px 0 0}
-.sct-cbar-fill.is-alert{background:var(--zw-danger)}
-/* 弱化的柱子（不在当前窗口内）：留形不留势 */
-.sct-cbar-fill.is-muted{background:var(--zw-line-strong);opacity:.55}
-.sct-cbar-label{font-size:10px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;flex:none;height:13px;display:flex;align-items:flex-end}
-
-/* 横向条形图：每行一个领域，条右侧写在办数 */
-.sct-chart-hbar{display:flex;flex-direction:column;gap:7px}
-.sct-hbar-row{display:grid;grid-template-columns:minmax(56px,auto) minmax(0,1fr) auto;align-items:center;gap:9px}
-.sct-hbar-name{font-size:12px;color:var(--zw-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sct-hbar-track{display:flex;height:11px;border-radius:3px;background:var(--zw-raised);overflow:hidden;min-width:0}
-.sct-hbar-fill{height:100%;border-radius:2px;min-width:2px}
-.sct-hbar-open{background:var(--zw-accent)}
-.sct-hbar-created{background:#58a6ff;opacity:.75}
-.sct-hbar-completed{background:var(--zw-success);opacity:.75}
-.sct-hbar-fill+.sct-hbar-fill{margin-left:2px}
-.sct-hbar-value{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;align-items:baseline;gap:5px}
-.sct-hbar-value strong{font-weight:600;font-size:13px}
-.sct-hbar-value em{font-style:normal;font-size:10.5px;color:var(--zw-muted)}
-
-/* 环形进度 */
-.sct-pay-chart{display:flex;align-items:center;gap:14px;min-width:0}
-.sct-donut{position:relative;flex:none}
-.sct-donut-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
-.sct-donut-label strong{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
-.sct-donut-label span{font-size:9.5px;color:var(--zw-muted)}
-.sct-pay-bars{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
-
-/* 堆叠条：已收 / 逾期 / 待收三段 */
-.sct-stack{display:flex;height:12px;border-radius:3px;overflow:hidden;background:var(--zw-raised)}
-.sct-stack-seg{height:100%;min-width:2px}
-.sct-stack-seg+.sct-stack-seg{margin-left:1px}
-.sct-stack-seg.is-got{background:var(--zw-success)}
-.sct-stack-seg.is-overdue{background:var(--zw-danger)}
-.sct-stack-seg.is-pending{background:var(--zw-line-strong)}
-.sct-stack-labels{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:10.5px;color:var(--zw-muted)}
-.sct-stack-labels>span{display:inline-flex;align-items:center;white-space:nowrap}
-.sct-dot-got{background:var(--zw-success)}
-.sct-dot-overdue{background:var(--zw-danger)}
-.sct-dot-pending{background:var(--zw-line-strong)}
-
-/*
- * 漏斗下方的金额条。
- *
- * 柱状图的标签已经写了段名，这里**不再重复段名**（重复会撑爆宽度、
- * 在窄列里还会重叠）。只写金额与卡住天数，四条横向排、用竖线分隔。
- * 段名靠位置对应——第 n 条对应第 n 根柱子，柱状图就在上面。
- */
-.sct-chart-notes{display:flex;align-items:baseline;gap:0;font-size:10.5px;color:var(--zw-muted);margin-top:3px;flex-wrap:nowrap;overflow:hidden}
-.sct-chart-notes>span{display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap;min-width:0;overflow:hidden}
-.sct-chart-notes>span+span{margin-left:8px;padding-left:8px;border-left:1px solid var(--zw-line)}
-.sct-chart-notes b{font-weight:500;color:var(--zw-text);white-space:nowrap}
-.sct-chart-notes em{font-style:normal;color:var(--zw-warning);white-space:nowrap}
-
-/* ── 数据看板页 ── */
-/*
 .sct-board-page{
-  display:grid;
-  grid-template-columns:minmax(220px,260px) minmax(240px,300px) minmax(0,1fr);
-  grid-template-rows:auto auto minmax(0,1fr);
-  grid-template-areas:
-    "bar   bar  bar"
-    "kpis  kpis kpis"
-    "left  mid  right";
-  gap:12px 18px;
-  align-content:start;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
   height:100%;
   min-height:0;
   overflow:hidden;
   padding-top:2px;
 }
-.sct-boardbar{grid-area:bar;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.sct-board-kpis{grid-area:kpis}
-.sct-board-col-left{grid-area:left;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
-.sct-board-col-mid{grid-area:mid;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
-.sct-board-col-right{grid-area:right;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
+
+/* ── 时间窗口切换 ── */
+.sct-boardbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;flex:none}
 .sct-boardbar-tabs{display:inline-flex;border:1px solid var(--zw-line);border-radius:8px;overflow:hidden}
-.sct-winbtn{border:0;background:transparent;color:var(--zw-muted);font-size:12.5px;padding:7px 14px;cursor:pointer;font-family:inherit}
+.sct-winbtn{border:0;background:transparent;color:var(--zw-muted);font-size:12.5px;padding:6px 13px;cursor:pointer;font-family:inherit}
 .sct-winbtn:hover{background:var(--zw-hover)}
 .sct-winbtn.is-active{background:var(--zw-accent-soft);color:var(--zw-text);font-weight:600}
 .sct-winbtn+.sct-winbtn{border-left:1px solid var(--zw-line)}
 .sct-boardbar-dates{display:flex;align-items:center;gap:7px}
-.sct-boardbar-dates input{border:1px solid var(--zw-line);background:var(--dsw-alias-bg-layer-1);color:var(--zw-text);border-radius:7px;padding:6px 9px;font-size:12.5px;font-family:inherit}
+.sct-boardbar-dates input{border:1px solid var(--zw-line);background:var(--zw-raised);color:var(--zw-text);border-radius:7px;padding:5px 9px;font-size:12.5px;font-family:inherit}
 .sct-boardbar-sep{color:var(--zw-muted);font-size:12px}
 .sct-boardbar-label{font-size:12.5px;color:var(--zw-muted);margin-left:auto}
 
-/* 关键数字：四格等宽，但用 grid 保证窄屏不塌 */
-.sct-board-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--zw-line);border:1px solid var(--zw-line);border-radius:10px;overflow:hidden}
-.sct-kpi{display:flex;flex-direction:column;gap:3px;padding:14px 16px;background:var(--dsw-alias-bg-layer-1)}
-.sct-kpi-key{font-size:11.5px;color:var(--zw-muted)}
-.sct-kpi strong{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1.1}
-.sct-kpi-note{font-size:10.5px;color:var(--zw-muted);opacity:.8}
-
-.sct-block{display:flex;flex-direction:column;gap:8px;min-height:0;flex:none}
+/* ── 五个数据标签 ── */
 /*
- * 右列最后一块（趋势）不再吃剩余高度——趋势有自己的上限。
- * 左列的表格块可能比右列高（域多的时候），溢出时**内部滚动**，
- * 而不是把整页撑出屏幕。
+ * 等分五列。第一张（签订合同额）用强调色：
+ * 它是唯一的金额，也是最先被看的数字。
+ * 数值用 tabular-nums，位数变化时不会左右跳。
  */
-.sct-board-col-left>.sct-block:last-child{overflow:hidden}
-.sct-block-title{font-size:12px;font-weight:600;color:var(--zw-muted);letter-spacing:.3px;margin:0;flex:none}
+.sct-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;flex:none}
+.sct-stat{display:flex;flex-direction:column;gap:2px;padding:11px 14px;border:1px solid var(--zw-line);border-radius:9px;background:var(--zw-raised);min-width:0}
+.sct-stat.is-accent{border-color:var(--zw-accent);background:var(--zw-accent-soft)}
+.sct-stat-key{font-size:11.5px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sct-stat-val{font-size:23px;font-weight:600;letter-spacing:-.5px;line-height:1.15;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sct-stat.is-accent .sct-stat-val{color:var(--zw-accent)}
+.sct-stat-note{font-size:10.5px;color:var(--zw-muted);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
+/* ── 图表网格：上排三张、下排两张 ── */
 /*
- * 各领域汇总表：领域名放得宽，数字列固定窄。
- *
- * 四列都用 1fr 会让数字飘到格子中间，眼睛要横跨大半屏才能把
- * "项目销售"和它的"2"对上。数字列固定宽度更紧凑。
- *
- * 左列最窄 300px 时：领域名 120 + 四个数字列 4×44 = 296，刚好放得下。
- * 用 44 而不是 76，是因为两列布局后表格只有约 340px 宽——
- * 76 会把第五列（逾期）直接挤出容器，**而且不报错**，那一列就那么消失了。
+ * 用 6 列网格让上下两排对齐：上排每张占 2 列、下排每张占 3 列。
+ * 直接写 grid-template-columns:repeat(3,1fr) 时下排两张会各占 1/3、
+ * 右边空一大块，看着像少画了一张。
  */
-.sct-btable{border:1px solid var(--zw-line);border-radius:9px;overflow:hidden}
-.sct-btable-row{display:grid;grid-template-columns:minmax(88px,1fr) repeat(4,44px);gap:0;align-items:center}
-.sct-btable-row>span{padding:7px 6px;font-size:12.5px;font-variant-numeric:tabular-nums;text-align:center}
-.sct-btable-row>span:first-child{text-align:left;padding-left:12px}
-.sct-btable-row>span:not(:first-child){text-align:right;padding-right:10px}
-.sct-btable-row+.sct-btable-row{border-top:1px solid var(--zw-line)}
-.sct-btable-head{background:var(--zw-raised)}
-.sct-btable-head>span{font-size:11px;color:var(--zw-muted);font-weight:500}
-.sct-btable-name{font-weight:500}
-.sct-btable-pos{color:var(--zw-warning)}
-.sct-btable-ok{color:var(--zw-success, #3fb950)}
-.sct-btable-bad{color:var(--zw-danger)}
+.sct-board-grid{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:12px;
+  flex:1;
+  min-height:0;
+  overflow:hidden;
+}
+.sct-panel{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  min-height:0;
+  border:1px solid var(--zw-line);
+  border-radius:10px;
+  background:var(--zw-surface);
+  padding:10px 12px;
+  overflow:hidden;
+}
+/* 前三个面板各占 2 列（上排三张） */
+.sct-panel:nth-child(1),
+.sct-panel:nth-child(2),
+.sct-panel:nth-child(3){grid-column:span 2}
+/* 后两个各占 3 列（下排两张） */
+.sct-panel:nth-child(4),
+.sct-panel:nth-child(5){grid-column:span 3}
 
+.sct-panel-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;flex:none;padding-bottom:7px}
+.sct-panel-head h3{font-size:12.5px;font-weight:600;color:var(--zw-text);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sct-panel-extra{font-size:11px;color:var(--zw-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sct-panel-body{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+
+/* ── 横向条形（销售项目跟踪状态） ── */
+.sct-chart-hbar{display:flex;flex-direction:column;justify-content:center;gap:8px;height:100%;min-height:0}
+.sct-chart-hbar.sct-chart-compact{gap:9px}
+.sct-hbar-row{display:grid;grid-template-columns:minmax(52px,auto) minmax(0,1fr) 28px;align-items:center;gap:9px;min-width:0}
+.sct-hbar-name{font-size:12px;color:var(--zw-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sct-hbar-track{height:12px;border-radius:3px;background:var(--zw-raised);overflow:hidden;min-width:0;display:flex}
+.sct-hbar-fill{height:100%;border-radius:2px;min-width:2px}
+.sct-hbar-open{background:var(--zw-accent)}
+.sct-hbar-ok{background:var(--zw-success)}
+.sct-hbar-bad{background:var(--zw-danger)}
+/* 数据标签：每行右侧直接写数量 */
+.sct-hbar-value{font-size:12.5px;font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.sct-hbar-value strong{font-weight:600}
+
+/* ── 竖向柱状（三张月度图） ── */
 /*
- * 漏斗：一段一段横向排，用箭头连起来。
- *
- * 紧凑化（为了"一屏放下"）：
- *   内边距 11/15 → 8/11，最小宽度 120 → 92，字号 19 → 16。
- * 四个框加起来原来要 4×120 + 3×26 = 558px，右列宽度足够，
- * 真正吃高度的是内边距——压掉 6px/框就省 12px。
+ * 高度交给容器：面板 body 是 flex:1，柱状图撑满。
+ * 数值行和标签行 flex:none，柱子段 flex:1——柱子被压缩时
+ * **数字永远还在**，不会跟着消失。
  */
-.sct-funnel{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;min-width:0}
-.sct-funnel-seg{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--zw-line);border-radius:8px;min-width:92px;flex:1;position:relative}
-.sct-funnel-seg+.sct-funnel-seg{margin-left:22px}
-.sct-funnel-label{font-size:11px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sct-funnel-seg strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
-.sct-funnel-amount{font-size:11px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sct-funnel-stuck{font-size:10px;color:var(--zw-warning);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sct-funnel-arrow{position:absolute;right:-18px;top:50%;transform:translateY(-50%);color:var(--zw-muted);font-size:13px}
+.sct-chart-bar{display:flex;align-items:stretch;gap:5px;flex:1;min-height:0;overflow:hidden}
+.sct-chart-bar-tall{min-height:72px}
+.sct-cbar-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;overflow:hidden}
+.sct-cbar-value{font-size:10.5px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--zw-text);line-height:1;white-space:nowrap;flex:none;height:12px;display:flex;align-items:flex-end}
+.sct-cbar-track{width:100%;flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center}
+.sct-cbar-fill{width:min(100%,22px);border-radius:3px 3px 0 0;background:var(--zw-accent)}
+/* 三张图各用一个颜色，方便区分（同一页里三张柱状图，同色会看串） */
+.sct-cbar-blue{background:#58a6ff}
+.sct-cbar-green{background:var(--zw-success)}
+.sct-cbar-purple{background:#bc8cff}
+/* 窗口外的月份：留形状不留势，且不标数值 */
+.sct-cbar-fill.is-muted{background:var(--zw-line-strong);opacity:.5}
+.sct-cbar-label{font-size:9.5px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;flex:none;height:12px;display:flex;align-items:flex-end}
+.sct-cbar-label.is-active{color:var(--zw-text);font-weight:600}
 
-/* 回款：两列小表 */
-.sct-pay{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--zw-line);border:1px solid var(--zw-line);border-radius:9px;overflow:hidden}
-.sct-pay-row{display:flex;justify-content:space-between;align-items:baseline;padding:9px 14px;background:var(--dsw-alias-bg-layer-1);font-size:13px}
-.sct-pay-row span{color:var(--zw-muted);font-size:12px}
-.sct-pay-row strong{font-variant-numeric:tabular-nums}
-.sct-pay-sep{display:none}
+/* ── 环形 + 图例（合同状态分布） ── */
+.sct-donut-wrap{display:flex;align-items:center;gap:18px;height:100%;min-height:0;padding:2px 0}
+.sct-donut{position:relative;flex:none}
+.sct-donut-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.sct-donut-label strong{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.sct-donut-label span{font-size:9.5px;color:var(--zw-muted)}
+.sct-legend{display:grid;grid-template-columns:repeat(auto-fit,minmax(84px,1fr));gap:5px 14px;flex:1;min-width:0}
+.sct-legend-item{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;color:var(--zw-muted);white-space:nowrap;min-width:0}
+.sct-legend-item i{width:8px;height:8px;border-radius:2px;flex:none}
+.sct-legend-item em{font-style:normal;color:var(--zw-text);overflow:hidden;text-overflow:ellipsis}
+/* 图例里的数量也是数据标签，用粗体让它比状态名更醒目 */
+.sct-legend-item b{margin-left:auto;font-weight:600;color:var(--zw-text);font-variant-numeric:tabular-nums}
 
+/* ── 窄屏：标签两列、图表单列、允许纵向滚动 ── */
 /*
- * 趋势：12 根柱子。
- *
- * ── 高度按可用空间收缩 ──
- * 固定 200px 在矮屏（笔记本 568px 可用高）会撑爆右列；
- * 固定 110px 在宽屏又显得像没有数据。
- *
- * 用 clamp(70px, 18vh, 190px)：矮屏给 70px 保底，高屏最多 190px。
- * vh 比 px 更贴合"一屏放下"这个目标——它跟着窗口走。
+ * 手机上五张图一屏塞不下，这时候"一屏不滚动"是伪需求——
+ * 硬塞会把每张图压成一条线。窄屏放开滚动，让内容正常展开。
  */
-.sct-trend{display:flex;align-items:flex-end;gap:4px;height:clamp(70px,18vh,190px);padding:4px 0 0;flex:none}
-.sct-trend-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;min-width:0;height:100%;position:relative}
-.sct-trend-col.is-in-window{background:linear-gradient(to top,rgba(121,192,255,.07),transparent);border-radius:5px}
-.sct-trend-bars{display:flex;align-items:flex-end;justify-content:center;gap:3px;flex:1;width:100%}
-.sct-trend-bar{width:7px;border-radius:2px 2px 0 0;min-height:2px}
-.sct-trend-created{background:#79c0ff}
-.sct-trend-completed{background:#3fb950}
-.sct-trend-label{font-size:10px;color:var(--zw-muted);white-space:nowrap}
-.sct-trend-legend{display:flex;gap:16px;font-size:11.5px;color:var(--zw-muted)}
-.sct-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
-.sct-dot-created{background:#79c0ff}
-.sct-dot-completed{background:#3fb950}
-
-/* 风险 */
-.sct-risks{display:flex;flex-direction:column;gap:1px;background:var(--zw-line);border:1px solid var(--zw-line);border-radius:9px;overflow:hidden}
-.sct-risk{display:flex;align-items:baseline;gap:10px;padding:10px 14px;background:var(--dsw-alias-bg-layer-1)}
-.sct-risk-label{font-size:13px;font-weight:500;min-width:88px}
-.sct-risk strong{font-variant-numeric:tabular-nums;font-size:15px}
-.sct-risk-note{font-size:11.5px;color:var(--zw-muted);margin-left:auto;text-align:right}
-.sct-risk-high .sct-risk-label,.sct-risk-high strong{color:var(--zw-danger)}
-.sct-risk-medium .sct-risk-label{color:var(--zw-warning)}
-.sct-board-hint{font-size:12.5px;color:var(--zw-muted);margin:0;padding:10px 0}
-
-@media (max-width:620px){
-  .sct-board-kpis{grid-template-columns:1fr 1fr}
-  /* 窄屏：数字列压到 52px，否则五个格子放不下 */
-  .sct-btable-row{grid-template-columns:minmax(84px,1fr) repeat(4,52px)}
-  .sct-btable-row>span{padding:8px 6px;font-size:12px}
-  .sct-btable-row>span:first-child{padding-left:10px}
-  .sct-btable-row>span:not(:first-child){padding-right:8px}
-  .sct-pay{grid-template-columns:1fr}
-  .sct-boardbar-label{margin-left:0;width:100%}
+@media (max-width:900px){
+  .sct-board-page{height:auto;overflow:visible}
+  .sct-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .sct-board-grid{grid-template-columns:1fr;flex:none}
+  .sct-panel:nth-child(n){grid-column:span 1}
+  .sct-panel{min-height:170px}
+  .sct-chart-bar-tall{min-height:110px}
 }
 
 .sct-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:36px 0 28px;flex:none}
@@ -1047,51 +969,27 @@ window.__ModuleLoader__.load({
         'tab.all': '全部记录',
         'tab.customers': '客户台账',
         'tab.board': '数据看板',
-        // ── 数据看板页 ──
+        // ── 数据看板页：五个标签 + 五张图 ──
         'board.windowLabel': '统计时间范围',
         'board.winMonth': '本月',
         'board.winQuarter': '本季',
+        'board.winYear': '今年',
         'board.winCustom': '自定义',
         'board.from': '开始日期',
         'board.to': '结束日期',
-        'board.open': '在办',
-        'board.created': '本期新增',
-        'board.completed': '本期完成',
-        'board.completionRate': '完成率',
-        // 余额 vs 流量：这两类数放在一起必须标清楚，否则用户会拿"本月新增 3"和"在办 12"瞎比
-        'board.balanceNote': '期末余额',
-        'board.flowNote': '期内',
-        'board.rateNote': '本期建{0}/{1}',
-        'board.blockDomains': '各项工作',
-        'board.blockFunnel': '销售链条',
-        'board.blockPay': '回款',
-        'board.blockTrend': '近 12 个月',
-        'board.blockRisks': '风险',
-        'board.colDomain': '领域',
-        'board.colOpen': '在办',
-        'board.colCreated': '新增',
-        'board.colCompleted': '完成',
-        'board.colOverdue': '逾期',
-        'board.stuckDays': '最久 {n} 天',
-        'board.receivable': '应收',
-        'board.received': '已收',
-        'board.outstanding': '待收',
-        'board.overdue': '逾期',
-        'board.dueInWindow': '本期该收',
-        'board.receivedInWindow': '本期收到',
-        'board.legendCreated': '新建',
-        'board.legendCompleted': '完成',
-        'board.emptyDomains': '这段时间还没有记录。',
-        'board.noRisk': '没有需要处理的风险项',
         'board.loadError': '看板加载失败',
-        // 数据看板：顶部常驻摘要条的四格
-        'board.label': '数据看板',
-        'board.open': '在办',
-        'board.outstanding': '待收',
-        'board.overdue': '逾期',
-        'board.risk': '风险',
-        'board.noOverdue': '没有逾期回款',
-        'board.noRisk': '没有需要处理的风险项',
+        // 五个数据标签
+        'board.statSignedAmount': '签订合同额',
+        'board.statSignedAmountNote': '按签订日归期',
+        'board.statSignedCount': '签订合同数量',
+        'board.statSignedCountNote': '按签订日归期',
+        'board.statSalesCount': '销售项目数量',
+        'board.statSalesCountNote': '期内新建',
+        'board.statVisitCount': '客户交流数量',
+        'board.statVisitCountNote': '按拜访日归期',
+        'board.statOpportunityCount': '商机数量',
+        'board.statOpportunityCountNote': '期内新建',
+        'board.contractTotal': '合同总数',
         'cust.title': '客户台账',
         'cust.won': '中标 {n}',
         'cust.lost': '未中标 {n}',
@@ -1312,46 +1210,22 @@ window.__ModuleLoader__.load({
         'board.windowLabel': 'Period',
         'board.winMonth': 'This month',
         'board.winQuarter': 'This quarter',
+        'board.winYear': 'This year',
         'board.winCustom': 'Custom',
         'board.from': 'From',
         'board.to': 'To',
-        'board.open': 'Open',
-        'board.created': 'Created',
-        'board.completed': 'Completed',
-        'board.completionRate': 'Completion',
-        'board.balanceNote': 'balance',
-        'board.flowNote': 'in period',
-        'board.rateNote': 'built {0}/{1}',
-        'board.blockDomains': 'Work by area',
-        'board.blockFunnel': 'Sales pipeline',
-        'board.blockPay': 'Payments',
-        'board.blockTrend': 'Last 12 months',
-        'board.blockRisks': 'Risks',
-        'board.colDomain': 'Area',
-        'board.colOpen': 'Open',
-        'board.colCreated': 'New',
-        'board.colCompleted': 'Done',
-        'board.colOverdue': 'Overdue',
-        'board.stuckDays': 'stuck {n}d',
-        'board.receivable': 'Receivable',
-        'board.received': 'Received',
-        'board.outstanding': 'Outstanding',
-        'board.overdue': 'Overdue',
-        'board.dueInWindow': 'Due in period',
-        'board.receivedInWindow': 'Received in period',
-        'board.legendCreated': 'New',
-        'board.legendCompleted': 'Done',
-        'board.emptyDomains': 'No records in this period.',
-        'board.noRisk': 'Nothing needs attention',
         'board.loadError': 'Could not load the board',
-        // Data board: the four cells of the persistent summary bar
-        'board.label': 'Data board',
-        'board.open': 'Open',
-        'board.outstanding': 'Receivable',
-        'board.overdue': 'Overdue',
-        'board.risk': 'Risks',
-        'board.noOverdue': 'No overdue payments',
-        'board.noRisk': 'No risks to handle',
+        'board.statSignedAmount': 'Contract value',
+        'board.statSignedAmountNote': 'by signing date',
+        'board.statSignedCount': 'Contracts signed',
+        'board.statSignedCountNote': 'by signing date',
+        'board.statSalesCount': 'Sales projects',
+        'board.statSalesCountNote': 'created in period',
+        'board.statVisitCount': 'Customer visits',
+        'board.statVisitCountNote': 'by visit date',
+        'board.statOpportunityCount': 'Opportunities',
+        'board.statOpportunityCountNote': 'created in period',
+        'board.contractTotal': 'contracts',
         'cust.title': 'Customer ledger',
         'cust.won': 'Won {n}',
         'cust.lost': 'Lost {n}',
@@ -3787,78 +3661,6 @@ window.__ModuleLoader__.load({
         ),
       );
 
-      /**
-       * 顶部常驻摘要条：一行四格。
-       *
-       * ── 为什么不放进页签 ──
-       * 看板的价值在"随时瞄一眼就知道整体什么形态"。放进页签就得先点开，
-       * 那和报告没区别了。所以压成一行常驻在顶部。
-       *
-       * ── 为什么只四格 ──
-       * 这行高度固定，多一格挤一分，挤到后面没人看。只留"变了就该动手"的：
-       * 待收的钱、逾期的钱、在办、风险。其余细节放 title 属性，悬停才看。
-       *
-       * ── 全部为空时不显示 ──
-       * 一排零比不显示更吵，反而训练用户忽略这块区域。
-       */
-      const board = (data && data.board) || null;
-      const boardSummary = board && board.summary ? board.summary : null;
-      const boardHasAnything = Boolean(
-        boardSummary && (boardSummary.open || boardSummary.outstanding || boardSummary.overdueAmount || boardSummary.riskCount),
-      );
-
-      const boardBar = boardHasAnything
-        ? h(
-            'div',
-            { className: 'sct-board', role: 'group', 'aria-label': t('board.label') },
-            h(
-              'span',
-              {
-                className: 'sct-board-cell',
-                title: `${t('board.open')}：${boardSummary.open} 条在办事项`,
-              },
-              h('span', { className: 'sct-board-key' }, t('board.open')),
-              h('strong', null, String(boardSummary.open)),
-            ),
-            h(
-              'span',
-              {
-                className: 'sct-board-cell',
-                title: `${t('board.outstanding')}：应收 ${board.payments.receivable} 元，已收 ${board.payments.received} 元，本月该收 ${board.payments.dueThisMonth} 元`,
-              },
-              h('span', { className: 'sct-board-key' }, t('board.outstanding')),
-              h('strong', null, compactMoney(boardSummary.outstanding)),
-            ),
-            h(
-              'span',
-              {
-                className: boardSummary.overdueAmount > 0 ? 'sct-board-cell sct-board-alert' : 'sct-board-cell',
-                title:
-                  boardSummary.overdueAmount > 0
-                    ? `逾期 ${board.payments.overdueCount} 期，涉及 ${board.payments.contractsWithOverdue} 份合同；最久 ${board.payments.overdue[0] ? board.payments.overdue[0].days + ' 天' : '—'}`
-                    : t('board.noOverdue'),
-              },
-              h('span', { className: 'sct-board-key' }, t('board.overdue')),
-              boardSummary.overdueAmount > 0
-                ? h('strong', null, compactMoney(boardSummary.overdueAmount))
-                // 没有逾期时给一个弱化的破折号：有意义（说明这项是干净的），
-                // 但不要和真实数字一样黑，否则扫视时会被当成"有数"
-                : h('strong', { className: 'sct-board-empty' }, '—'),
-            ),
-            h(
-              'span',
-              {
-                className: boardSummary.riskCount > 0 ? 'sct-board-cell sct-board-warn' : 'sct-board-cell',
-                title: (board.risks || []).map((r) => `${r.label} ${r.count}`).join('｜') || t('board.noRisk'),
-              },
-              h('span', { className: 'sct-board-key' }, t('board.risk')),
-              boardSummary.riskCount > 0
-                ? h('strong', null, String(boardSummary.riskCount))
-                : h('strong', { className: 'sct-board-empty' }, '—'),
-            ),
-          )
-        : null;
-
       const hero = h(
         'section',
         { className: 'sct-hero' },
@@ -4375,6 +4177,24 @@ window.__ModuleLoader__.load({
        * 而"新增""完成"是期内流量。两类数放一起，不标清楚用户会乱比
        * （比如拿"本月新增 3"去和"在办 12"较劲）。所以行内用小字标了"期末"。
        */
+      /**
+       * 数据看板页面。
+       *
+       * ── 布局：五个标签 + 五张图，不增不减 ──
+       * 用户明确给了规格，就按规格做，不要自己加"在办""风险"这类东西。
+       * 多加了东西用户会问"这是什么"，少做了会问"我要的呢"。
+       *
+       * 标签（横排五个）：
+       *   签订合同额 · 签订合同数量 · 销售项目数量 · 客户交流数量 · 商机数量
+       *
+       * 图表（上排三张按月，下排两张分布）：
+       *   销售项目跟踪状态统计 · 合同签订数量统计 · 客户交流数量统计
+       *   商机数量统计 · 合同状态分布统计
+       *
+       * ── 为什么图表分两行 ──
+       * 五张图一行放不下（每张至少 200px 才看得清），
+       * 两行 3+2 在 1440 宽下刚好，且不用滚动。
+       */
       function renderBoard() {
         if (boardError) {
           return h(
@@ -4384,13 +4204,19 @@ window.__ModuleLoader__.load({
             h('p', null, boardError),
           );
         }
-        if (boardLoading && !boardData) return h(Skeleton, null);
-        if (!boardData) return h(Skeleton, null);
-        const board = boardData;
+        if (!board) return h(Skeleton, null);
 
-        const money = compactMoney;
+        const st = board.stats;
+        const sv = board.statsView;
+        const charts = board.charts;
 
-        /* ── 时间窗口切换 ── */
+        /**
+         * 时间窗口切换。
+         *
+         * 四个粒度：本月 / 本季 / 今年 / 自定义。
+         * "今年"是为了签订合同额这类累计指标——那是按年看的指标，
+         * 只有月/季时得点两次自定义才能看全年。
+         */
         const windowBar = h(
           'div',
           { className: 'sct-boardbar' },
@@ -4400,6 +4226,7 @@ window.__ModuleLoader__.load({
             ...[
               ['month', t('board.winMonth')],
               ['quarter', t('board.winQuarter')],
+              ['year', t('board.winYear')],
               ['custom', t('board.winCustom')],
             ].map(function (pair) {
               const key = pair[0];
@@ -4446,375 +4273,267 @@ window.__ModuleLoader__.load({
           h('span', { className: 'sct-boardbar-label' }, board.window.label),
         );
 
-        /* ── ① 本期概况 ── */
+        /* ── 五个数据标签 ── */
+
         /**
-         * 四个数字，口径各不相同，必须让用户看出来：
-         *   在办      —— 期末余额（不随窗口变）
-         *   本期新增  —— 期内按 created 归期
-         *   本期完成  —— 期内按 completedAt 归期（含往期建的）
-         *   完成率    —— **本期新建的那些里，做完了多少**（分子是分母的子集）
+         * 标签卡片。
          *
-         * ── 为什么完成率下面要单独注明"其中本期新建 X" ──
-         * 这两个数天然可能不相等：本期完成 13 条里，可能有 7 条是九月建的。
-         * 完成率只算"本期新建的消化了多少"，所以它可能是 0%，
-         * 而"本期完成 13 条"照样成立。不标注的话，用户看到
-         * "完成 13 条 / 完成率 0%" 会认为其中一个数字坏了。
+         * 第一张（签订合同额）用强调色：它是这五个里唯一的金额，
+         * 也是最先被看的数字。其余四个是同质计数，统一处理。
          */
-        const createdDoneCount = board.totals.completionRate === null
-          ? 0
-          : Math.round((board.totals.completionRate / 100) * board.totals.created * 10) / 10;
-        const totalsRow = h(
+        const makeStat = function (key, label, value, note, accent) {
+          return h(
+            'div',
+            { key: key, className: accent ? 'sct-stat is-accent' : 'sct-stat', title: note || undefined },
+            h('span', { className: 'sct-stat-key' }, label),
+            h('strong', { className: 'sct-stat-val' }, value),
+            note ? h('span', { className: 'sct-stat-note' }, note) : null,
+          );
+        };
+
+        const statRow = h(
           'div',
-          { className: 'sct-board-kpis' },
-          h(
-            'div',
-            { className: 'sct-kpi' },
-            h('span', { className: 'sct-kpi-key' }, t('board.open')),
-            h('strong', null, String(board.totals.open)),
-            h('span', { className: 'sct-kpi-note' }, t('board.balanceNote')),
+          { className: 'sct-stats' },
+          makeStat(
+            'signedAmount',
+            t('board.statSignedAmount'),
+            sv.signedAmount,
+            t('board.statSignedAmountNote'),
+            true,
           ),
-          h(
-            'div',
-            { className: 'sct-kpi' },
-            h('span', { className: 'sct-kpi-key' }, t('board.created')),
-            h('strong', null, String(board.totals.created)),
-            h('span', { className: 'sct-kpi-note' }, t('board.flowNote')),
-          ),
-          h(
-            'div',
-            { className: 'sct-kpi' },
-            h('span', { className: 'sct-kpi-key' }, t('board.completed')),
-            h('strong', null, String(board.totals.completed)),
-            h(
-              'span',
-              { className: 'sct-kpi-note', title: '含往期新建、本期完成的记录' },
-              t('board.flowNote'),
-            ),
-          ),
-          h(
-            'div',
-            { className: 'sct-kpi' },
-            h('span', { className: 'sct-kpi-key' }, t('board.completionRate')),
-            h(
-              'strong',
-              null,
-              board.totals.completionRate === null ? '—' : board.totals.completionRate + '%',
-            ),
-            h(
-              'span',
-              { className: 'sct-kpi-note', title: '本期新建的记录里，本期完成的比例' },
-              fill(t('board.rateNote'), createdDoneCount || 0, board.totals.created),
-            ),
+          makeStat('signedCount', t('board.statSignedCount'), String(st.signedCount), t('board.statSignedCountNote')),
+          makeStat('salesCount', t('board.statSalesCount'), String(st.salesCount), t('board.statSalesCountNote')),
+          makeStat('visitCount', t('board.statVisitCount'), String(st.visitCount), t('board.statVisitCountNote')),
+          makeStat(
+            'opportunityCount',
+            t('board.statOpportunityCount'),
+            String(st.opportunityCount),
+            t('board.statOpportunityCountNote'),
           ),
         );
 
-        /* ── ② 各领域汇总 ── */
-        const domainTable = board.domains.length
-          ? h(
+        /* ── 图1：销售项目跟踪状态（横向条形，阶段多） ── */
+
+        const stageChart = charts.salesByStage;
+        const stageMax = Math.max(1, ...stageChart.items.map((x) => x.count));
+        const stageBars = h(
+          'div',
+          { className: 'sct-chart-hbar sct-chart-compact' },
+          ...stageChart.items.map(function (item) {
+            const pct = item.count > 0 ? Math.max(3, (item.count / stageMax) * 100) : 0;
+            return h(
               'div',
-              { className: 'sct-btable' },
+              { key: item.key, className: 'sct-hbar-row' },
+              h('span', { className: 'sct-hbar-name' }, item.label),
               h(
                 'div',
-                { className: 'sct-btable-row sct-btable-head' },
-                h('span', null, t('board.colDomain')),
-                h('span', null, t('board.colOpen')),
-                h('span', null, t('board.colCreated')),
-                h('span', null, t('board.colCompleted')),
-                h('span', null, t('board.colOverdue')),
+                { className: 'sct-hbar-track' },
+                item.count > 0
+                  ? h('span', {
+                      className: 'sct-hbar-fill ' + (item.key === '已中标' ? 'sct-hbar-ok' : item.key === '未中标' ? 'sct-hbar-bad' : 'sct-hbar-open'),
+                      style: { width: pct + '%' },
+                    })
+                  : null,
               ),
-              ...board.domains.map(function (row) {
-                return h(
-                  'div',
-                  { key: row.id, className: 'sct-btable-row' },
-                  h('span', { className: 'sct-btable-name' }, row.name),
-                  h('span', null, String(row.open)),
-                  h('span', { className: 'sct-btable-pos' }, row.created ? '+' + row.created : '—'),
-                  h('span', { className: 'sct-btable-ok' }, row.completed ? String(row.completed) : '—'),
-                  h(
-                    'span',
-                    { className: row.overdue ? 'sct-btable-bad' : '' },
-                    row.overdue ? String(row.overdue) : '—',
-                  ),
-                );
-              }),
-            )
-          : h('p', { className: 'sct-board-hint' }, t('board.emptyDomains'));
-
-        /*
-         * ── ① 漏斗用柱状图 ──
-         * 每一段一根柱，柱顶直接写数量，柱子下方写该段金额。
-         * 为什么不用横向流程条：横向条在窄列会塌，而柱状图在任意宽度下都成立，
-         * 且四段的高度差一眼能看出"货堆在哪一段"。
-         */
-        const funnelChart = h(BarChart, {
-          size: 'sm',
-          items: board.funnel.map(function (seg) {
-            return {
-              key: seg.key,
-              label: seg.label.replace(/管理|交付|销售/g, (m) => (m === '销售' ? '销售' : '')),
-              value: seg.count,
-              sub: seg.amountLabel + ' ' + money(seg.amount) + (seg.stuck ? '　最久 ' + seg.stuck.days + ' 天' : ''),
-              alert: false,
-            };
-          }),
-        });
-
-        /*
-         * 漏斗的金额与卡最久。
-         *
-         * 柱状图只能标数量，金额放不下。但**不能再用一遍段名**——
-         * 柱状图标签已经写了"商机管理"，说明行再写一遍就是重复，
-         * 而且四列挤在一起会重叠（实测截图里两段文字黏成一团）。
-         * 所以这里改成"一行四条、用竖线分隔"的紧凑形式，只写金额与天数。
-         */
-        const funnelLegend = h(
-          'div',
-          { className: 'sct-chart-notes' },
-          ...board.funnel.map(function (seg) {
-            return h(
-              'span',
-              { key: seg.key, title: seg.label + '　' + seg.amountLabel + ' ' + money(seg.amount) },
-              h('b', null, seg.amountLabel + ' ' + money(seg.amount)),
-              seg.stuck ? h('em', null, '卡' + seg.stuck.days + '天') : null,
+              // 数据标签：每行右侧直接写数量，不靠悬浮
+              h('span', { className: 'sct-hbar-value' }, h('strong', null, String(item.count))),
             );
           }),
         );
 
-        /*
-         * ── ② 各领域对比用横向条形图 ──
-         * 每行一个领域，条长＝在办数，条右侧直接写在办数，
-         * 后面跟着"+新增 / ✓完成 / !逾期"三个小标。
-         */
-        const domainChart = board.domains.length
-          ? h(HBarChart, {
-              rows: board.domains.map(function (row) {
-                const detailBits = [];
-                if (row.created) detailBits.push('+' + row.created);
-                if (row.completed) detailBits.push('✓' + row.completed);
-                if (row.overdue) detailBits.push('!' + row.overdue);
-                return {
-                  key: row.id,
-                  label: row.name,
-                  total: row.open,
-                  detail: detailBits.join(' '),
-                  series: [
-                    { key: 'open', label: '在办', value: row.open },
-                    { key: 'created', label: '新增', value: row.created },
-                    { key: 'completed', label: '完成', value: row.completed },
-                  ],
-                };
-              }),
-            })
-          : h('p', { className: 'sct-board-hint' }, t('board.emptyDomains'));
+        /* ── 图2/3/4：三张月度柱状图，共用同一个渲染器 ── */
 
-        /*
-         * ── ③ 回款用环形图 + 堆叠条 ──
-         * 环：已收占合同总额的比例（这是"回款进度"最直观的形态）
-         * 条：到期该收的里面，已收 / 未收 / 逾期三段
+        /**
+         * 月度柱状图。
+         *
+         * 数据标签规则：
+         *   · 窗口内的月 + 有值 → 标数字
+         *   · 窗口外的月       → 灰柱，不标（避免被误读成也算进来了）
+         *   · 0 值             → 不标（一排 0 很吵）
+         * 柱子高度按各自图的最大值归一，所以三张图之间的高度不可比——
+         * 它们本来回答的就是不同问题。
          */
-        const payPercent = board.payments.receivable > 0
-          ? Math.round((board.payments.received / board.payments.receivable) * 1000) / 10
-          : 0;
-        const payDonut = h(DonutChart, {
-          percent: payPercent,
-          percentLabel: board.payments.receivable > 0 ? payPercent + '%' : '—',
-          caption: t('board.payProgress'),
-          alert: board.payments.overdueAmount > 0,
-          size: 84,
-        });
+        const monthlyChart = function (key, spec, colorKey) {
+          const max = Math.max(1, ...spec.items.map((x) => x.count));
+          return h(
+            'div',
+            { key: key, className: 'sct-chart-bar sct-chart-bar-tall' },
+            spec.items.map(function (m) {
+              const pct = m.count > 0 ? Math.max(4, (m.count / max) * 100) : 0;
+              const showVal = m.inWindow && m.count > 0;
+              return h(
+                'div',
+                {
+                  key: m.key,
+                  className: 'sct-cbar-col',
+                  title: `${m.key}　${m.count} ${spec.unit}`,
+                },
+                h('span', { className: 'sct-cbar-value' }, showVal ? String(m.count) : ''),
+                h(
+                  'div',
+                  { className: 'sct-cbar-track' },
+                  h('span', {
+                    className:
+                      'sct-cbar-fill sct-cbar-' + colorKey + (m.inWindow ? '' : ' is-muted'),
+                    style: { height: pct + '%' },
+                  }),
+                ),
+                h('span', { className: 'sct-cbar-label' + (m.inWindow ? ' is-active' : '') }, m.label),
+              );
+            }),
+          );
+        };
 
-        const payStack = h(
-          'div',
-          { className: 'sct-stack' },
-          (function () {
-            const total = Math.max(1, board.payments.receivable);
-            const got = board.payments.received;
-            const overdue = board.payments.overdueAmount;
-            const pending = Math.max(0, board.payments.outstanding - overdue);
-            const seg = [
-              { key: 'got', label: t('board.received'), value: got, cls: 'is-got' },
-              { key: 'overdue', label: t('board.overdue'), value: overdue, cls: 'is-overdue' },
-              { key: 'pending', label: t('board.outstanding'), value: pending, cls: 'is-pending' },
-            ].filter((s) => s.value > 0);
-            return seg.map(function (s) {
-              return h('span', {
-                key: s.key,
-                className: 'sct-stack-seg ' + s.cls,
-                style: { width: Math.max(2, (s.value / total) * 100) + '%' },
-                title: s.label + ' ' + money(s.value),
-              });
+        /* ── 图5：合同状态分布（环形） ── */
+
+        /**
+         * 环形图 + 图例。
+         *
+         * 为什么用环形而不是柱：合同状态是"构成"关系（五份合同分成
+         * 草拟/签订/履行/完成/解除几块），环形能一眼看出占比。
+         * 但环形**必须配图例**——五色的饼没人记得住哪块是什么。
+         */
+        const statusSpec = charts.contractByStatus;
+        const statusTotal = Math.max(1, statusSpec.total);
+        /**
+         * 合同状态配色。
+         *
+         * 五种状态要**颜色可区分**，且语义上说得通：
+         *   草拟   灰   —— 还没开始
+         *   已签订 蓝   —— 已启动
+         *   履行中 绿   —— 正在进行（最"活"的状态）
+         *   已完成 浅蓝 —— 正常结束
+         *   已解除 红   —— 异常结束
+         *
+         * 原来的「已完成」用 #8b949e（和「草拟」的灰几乎一样），
+         * 两个扇区在环上连成一片，用户分不出哪块是哪块。
+         */
+        const STATUS_COLORS = {
+          草拟: '#6e7681',
+          已签订: '#58a6ff',
+          履行中: '#3fb950',
+          已完成: '#a5d6ff',
+          已解除: '#ff7b72',
+        };
+
+        const donutSize = 108;
+        const donutStroke = 13;
+        const donutR = (donutSize - donutStroke) / 2;
+        const donutC = 2 * Math.PI * donutR;
+        let offset = 0;
+        const donutSegs = statusSpec.items
+          .filter((x) => x.count > 0)
+          .map(function (x) {
+            const frac = x.count / statusTotal;
+            const dash = frac * donutC;
+            const seg = h('circle', {
+              key: x.key,
+              cx: donutSize / 2,
+              cy: donutSize / 2,
+              r: donutR,
+              fill: 'none',
+              stroke: STATUS_COLORS[x.key] || 'var(--zw-line)',
+              'stroke-width': donutStroke,
+              'stroke-dasharray': `${dash} ${donutC - dash}`,
+              // 从上一个段的末尾接着画
+              'stroke-dashoffset': -offset,
+              transform: `rotate(-90 ${donutSize / 2} ${donutSize / 2})`,
             });
-          })(),
-        );
+            offset += dash;
+            return seg;
+          });
 
-        const payLabels = h(
+        const statusDonut = h(
           'div',
-          { className: 'sct-stack-labels' },
-          h('span', null, h('i', { className: 'sct-dot sct-dot-got' }), t('board.received') + ' ' + money(board.payments.received)),
-          h(
-            'span',
-            null,
-            h('i', { className: 'sct-dot sct-dot-overdue' }),
-            t('board.overdue') + ' ' + (board.payments.overdueAmount ? money(board.payments.overdueAmount) : '—'),
-          ),
-          h(
-            'span',
-            null,
-            h('i', { className: 'sct-dot sct-dot-pending' }),
-            t('board.outstanding') + ' ' + money(board.payments.outstanding),
-          ),
-        );
-
-        /* ── ④ 月度趋势柱状图 ── */
-        const trendChart = h(BarChart, {
-          size: 'sm',
-          items: board.trend.months.map(function (m) {
-            return {
-              key: m.key,
-              label: m.label,
-              /**
-               * 标数值，但**0 值的月不标**。
-               *
-               * 12 根柱子若把 0 也写成"—"，窄列里就是一排横杠，
-               * 既糊又占位置。0 就是没数据，留空最干净。
-               * 有值的月照常标（用户要求"图表上直接标数值"）。
-               */
-              value: m.created,
-              hideZero: true,
-              sub: m.key + '　新建 ' + m.created + '　完成 ' + m.completed,
-              muted: !m.inWindow,
-            };
-          }),
-        });
-
-        /* ── ③ 回款 ── */
-        const payBlock = h(
-          'div',
-          { className: 'sct-pay' },
+          { className: 'sct-donut-wrap' },
           h(
             'div',
-            { className: 'sct-pay-row' },
-            h('span', null, t('board.receivable')),
-            h('strong', null, money(board.payments.receivable)),
-          ),
-          h(
-            'div',
-            { className: 'sct-pay-row' },
-            h('span', null, t('board.received')),
-            h('strong', { className: 'sct-btable-ok' }, money(board.payments.received)),
-          ),
-          h(
-            'div',
-            { className: 'sct-pay-row' },
-            h('span', null, t('board.outstanding')),
-            h('strong', null, money(board.payments.outstanding)),
-          ),
-          h(
-            'div',
-            { className: 'sct-pay-row' },
-            h('span', null, t('board.overdue')),
+            { className: 'sct-donut', style: { width: donutSize + 'px', height: donutSize + 'px' } },
             h(
-              'strong',
-              { className: board.payments.overdueAmount ? 'sct-btable-bad' : '' },
-              board.payments.overdueAmount ? money(board.payments.overdueAmount) : '—',
+              'svg',
+              { width: donutSize, height: donutSize, viewBox: `0 0 ${donutSize} ${donutSize}`, 'aria-hidden': 'true' },
+              // 底环：总数为 0 时也能看出这是个环，而不是坏掉的图
+              h('circle', {
+                cx: donutSize / 2,
+                cy: donutSize / 2,
+                r: donutR,
+                fill: 'none',
+                stroke: 'var(--zw-line)',
+                'stroke-width': donutStroke,
+              }),
+              donutSegs,
+            ),
+            h(
+              'div',
+              { className: 'sct-donut-label' },
+              h('strong', null, String(statusSpec.total)),
+              h('span', null, t('board.contractTotal')),
             ),
           ),
-          h('div', { className: 'sct-pay-sep' }),
+          // 图例：每项都直接写数量（数据标签）
           h(
             'div',
-            { className: 'sct-pay-row sct-pay-window' },
-            h('span', null, t('board.dueInWindow')),
-            h('strong', null, money(board.payments.dueInWindow)),
-          ),
-          h(
-            'div',
-            { className: 'sct-pay-row sct-pay-window' },
-            h('span', null, t('board.receivedInWindow')),
-            h('strong', null, money(board.payments.receivedInWindow)),
+            { className: 'sct-legend' },
+            ...statusSpec.items.map(function (x) {
+              return h(
+                'span',
+                { key: x.key, className: 'sct-legend-item' },
+                h('i', { style: { background: STATUS_COLORS[x.key] || 'var(--zw-line)' } }),
+                h('em', null, x.label),
+                h('b', null, String(x.count)),
+              );
+            }),
           ),
         );
 
-        /* ── ④ 月度趋势（图表已在上方 trendChart 构建） ── */
+        /* ── 组装 ── */
 
-        const legend = h(
-          'div',
-          { className: 'sct-trend-legend' },
-          h('span', null, h('i', { className: 'sct-dot sct-dot-created' }), t('board.legendCreated')),
-          h('span', null, h('i', { className: 'sct-dot sct-dot-completed' }), t('board.legendCompleted')),
-        );
-
-        /* ── 风险 ── */
-        const riskBlock = board.risks.length
-          ? h(
-              'div',
-              { className: 'sct-risks' },
-              ...board.risks.map(function (r) {
-                return h(
-                  'div',
-                  { key: r.kind, className: 'sct-risk sct-risk-' + r.level },
-                  h('span', { className: 'sct-risk-label' }, r.label),
-                  h('strong', null, String(r.count)),
-                  h('span', { className: 'sct-risk-note' }, r.note || ''),
-                );
-              }),
-            )
-          : h('p', { className: 'sct-board-hint' }, t('board.noRisk'));
+        const makePanel = function (key, title, extra, body) {
+          return h(
+            'section',
+            { key: key, className: 'sct-panel' },
+            h(
+              'header',
+              { className: 'sct-panel-head' },
+              h('h3', null, title),
+              extra ? h('span', { className: 'sct-panel-extra' }, extra) : null,
+            ),
+            h('div', { className: 'sct-panel-body' }, body),
+          );
+        };
 
         return h(
           'div',
           { className: 'sct-board-page' },
           windowBar,
-          totalsRow,
-
-          /* 左列：各领域对比条形图（带数据标签） */
+          statRow,
           h(
             'div',
-            { className: 'sct-board-col-left' },
-            h(
-              'section',
-              { className: 'sct-block' },
-              h('h3', { className: 'sct-block-title' }, t('board.blockDomains')),
-              domainChart,
+            { className: 'sct-board-grid' },
+            makePanel('stage', charts.salesByStage.title, `${stageChart.total} ${stageChart.unit}`, stageBars),
+            makePanel(
+              'signed',
+              charts.signedMonthly.title,
+              `${charts.signedMonthly.total} ${charts.signedMonthly.unit}`,
+              monthlyChart('signed', charts.signedMonthly, 'blue'),
             ),
-          ),
-
-          /* 中列：回款环形图 + 堆叠条，下面是风险 */
-          h(
-            'div',
-            { className: 'sct-board-col-mid' },
-            h(
-              'section',
-              { className: 'sct-block' },
-              h('h3', { className: 'sct-block-title' }, t('board.blockPay')),
-              h('div', { className: 'sct-pay-chart' }, payDonut, h('div', { className: 'sct-pay-bars' }, payStack, payLabels)),
-              payBlock,
+            makePanel(
+              'visit',
+              charts.visitMonthly.title,
+              `${charts.visitMonthly.total} ${charts.visitMonthly.unit}`,
+              monthlyChart('visit', charts.visitMonthly, 'green'),
             ),
-            board.risks.length
-              ? h(
-                  'section',
-                  { className: 'sct-block' },
-                  h('h3', { className: 'sct-block-title' }, t('board.blockRisks')),
-                  riskBlock,
-                )
-              : null,
-          ),
-
-          /* 右列：漏斗柱状图 + 趋势柱状图 */
-          h(
-            'div',
-            { className: 'sct-board-col-right' },
-            h(
-              'section',
-              { className: 'sct-block' },
-              h('h3', { className: 'sct-block-title' }, t('board.blockFunnel')),
-              h('div', { className: 'sct-funnel-wrap' }, funnelChart, funnelLegend),
+            makePanel(
+              'opp',
+              charts.opportunityMonthly.title,
+              `${charts.opportunityMonthly.total} ${charts.opportunityMonthly.unit}`,
+              monthlyChart('opp', charts.opportunityMonthly, 'purple'),
             ),
-            h(
-              'section',
-              { className: 'sct-block' },
-              h('h3', { className: 'sct-block-title' }, t('board.blockTrend')),
-              trendChart,
-              legend,
+            makePanel(
+              'status',
+              charts.contractByStatus.title,
+              `${charts.contractByStatus.total} ${charts.contractByStatus.unit}`,
+              statusDonut,
             ),
           ),
         );
