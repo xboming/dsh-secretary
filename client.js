@@ -47,17 +47,27 @@ window.__ModuleLoader__.load({
      * 快照里的 `domainName` 只在条目视图里有，列表行的域标签用的是这张表。
      * 漏了的表现是面板上直接显示英文 id（`sales · S-2026-001`），
      * 不报错、不影响功能，但界面看着像没做完。
+     *
+     * ── 这张表必须是**兜底**，不能是真相 ──
+     * 真相在 lib/domains.js 的 name（后端随快照下发 domainName）。
+     * 这里只在拿不到下发值时用。两者不一致时以外部给的为准——
+     * 之前它落后过一次（缺 opportunity/contract，visit 还叫旧名），
+     * 面板上就出现了和域表对不上的标签。
+     *
+     * 统一四字：面板按钮宽度一致，也不会被截断。
      */
     const NAMES = {
-      // work 显示为「事务」：它是"不是商机的事"，不是"所有工作"。
+      // work 显示为「日常事务」：它是"不是商机的事"，不是"所有工作"。
       // 之前叫"工作"时，用户实际的工作八成落在销售域，记东西要反复纠结放哪。
-      work: '事务',
-      sales: '销售',
-      implement: '实施',
-      visit: '拜访',
-      creation: '创作',
-      idea: '灵感',
-      assistant: '助手',
+      work: '日常事务',
+      opportunity: '商机线索',
+      sales: '项目销售',
+      implement: '实施交付',
+      contract: '合同管理',
+      visit: '客户交流',
+      creation: '创作项目',
+      idea: '灵感记录',
+      assistant: '助手备忘',
     };
 
     const TOKEN_CSS = `
@@ -731,9 +741,10 @@ window.__ModuleLoader__.load({
         'theme.system': '跟随系统',
         'theme.light': '浅色',
         'theme.dark': '深色',
-        'tab.pending': '待办',
+        // ── 功能名称统一四字：按钮/页签宽度一致，也不会被截断 ──
+        'tab.pending': '待办事项',
         'tab.all': '全部记录',
-        'tab.customers': '客户',
+        'tab.customers': '客户台账',
         'cust.title': '客户台账',
         'cust.won': '中标 {n}',
         'cust.lost': '未中标 {n}',
@@ -741,12 +752,12 @@ window.__ModuleLoader__.load({
         'cust.visits': '拜访 {n}',
         'cust.amount': '中标 {name}',
         'cust.margin': '利润率 {name}%',
-        'cust.runningList': '在跟',
-        'cust.visitList': '最近拜访',
+        'cust.runningList': '在跟项目',
+        'cust.visitList': '拜访记录',
         'cust.lastVisit': '最近拜访：{name}',
         'cust.none': '暂无记录',
-        'cust.emptyTitle': '还没有客户数据',
-        'cust.emptyBody': '录一条商机或一次拜访，填上客户单位，这里就会按客户自动聚起来。中标、未中标、拜访都算在同一名下。',
+        'cust.emptyTitle': '没有客户数据',
+        'cust.emptyBody': '录一条商机线索或一次客户交流，填上客户单位，这里就会按客户自动聚起来。中标、未中标、拜访都算在同一名下。',
         'tab.list': '视图切换',
         // "全部"而不是"用户记录"：它本来是"排除助手域后的全部"，
         // 但"用户记录"看着像一个域，容易和第 2 行的事务/销售/创作并排误读。
@@ -771,10 +782,10 @@ window.__ModuleLoader__.load({
         'error.stale': '旧数据',
         'group.priority': '优先处理',
         'group.dueToday': '今天到期',
-        'group.soon': '剩 2 个工作日内',
-        'group.revisit': '值得重新看看',
+        'group.soon': '临期提醒',
+        'group.revisit': '值得重看',
         'group.followup': '今日跟进',
-        'group.sleep': '沉睡的灵感',
+        'group.sleep': '沉睡灵感',
         'group.idle': '进行中',
         'group.open': '进行中',
         'group.count': '{n} 条',
