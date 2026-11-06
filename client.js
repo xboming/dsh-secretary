@@ -60,12 +60,12 @@ window.__ModuleLoader__.load({
       // work 显示为「日常事务」：它是"不是商机的事"，不是"所有工作"。
       // 之前叫"工作"时，用户实际的工作八成落在销售域，记东西要反复纠结放哪。
       work: '日常事务',
-      opportunity: '商机线索',
+      opportunity: '商机管理',
       sales: '项目销售',
       implement: '实施交付',
       contract: '合同管理',
       visit: '客户交流',
-      creation: '创作项目',
+      creation: '创作管理',
       idea: '灵感记录',
       assistant: '助手备忘',
     };
