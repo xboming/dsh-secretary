@@ -200,20 +200,41 @@ window.__ModuleLoader__.load({
 }
 .sct-shell{max-width:var(--zw-shell-max);margin:0 auto;padding:0 var(--zw-shell-pad);width:100%;flex:1;min-height:0;display:flex;flex-direction:column;min-width:0}
 .sct-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:36px 0 28px;flex:none}
-/* 数据看板：顶部常驻一行四格。数值用等宽数字，位数变化时不会左右跳 */
+/* 数据看板：顶部常驻摘要条。数值用等宽数字，位数变化时不会左右跳 */
 .sct-board{display:flex;gap:0;flex:none;margin:0 0 18px;border:1px solid var(--zw-line);border-radius:10px;overflow:hidden;background:var(--dsw-alias-bg-layer-1)}
-.sct-board-cell{display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;padding:11px 14px;border-right:1px solid var(--zw-line);white-space:nowrap;overflow:hidden}
+/*
+ * 格子**按内容宽度**排，不占比整行。
+ *
+ * 原来写 flex:1，四个格子等分整行——宽屏下每格 780px 却只放"在办 5"两个字，
+ * 中间大片空白，看着像没加载完。摘要是"扫一眼"的东西，挤在左边更好读。
+ */
+.sct-board-cell{display:flex;align-items:baseline;gap:7px;flex:0 0 auto;padding:11px 18px;border-right:1px solid var(--zw-line);white-space:nowrap}
 .sct-board-cell:last-child{border-right:0}
-.sct-board-key{font-size:11.5px;color:var(--zw-muted);flex:none}
-.sct-board-cell strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.2px;overflow:hidden;text-overflow:ellipsis}
+.sct-board-key{font-size:11.5px;color:var(--zw-muted);flex:none;letter-spacing:.2px}
+.sct-board-cell strong{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.2px}
+/* 数值缺失（如逾期"—"）时弱化，不要和真实数字一样黑 */
+.sct-board-cell strong:only-child{margin-left:0}
 .sct-board-alert strong{color:var(--zw-danger)}
 .sct-board-warn strong{color:var(--zw-warning)}
-/* 窄屏：四格改两行，避免每格被压到只剩省略号 */
+/* 空值破折号：弱化，别和真实数字一样黑 */
+.sct-board-empty{color:var(--zw-muted);font-weight:400}
+/* 右侧留白：摘要靠左，右边空着是刻意的，不要把格子拉开去填 */
+.sct-board::after{content:'';flex:1 1 auto}
+/*
+ * 窄屏：改成 2×2 网格。
+ *
+ * 用 grid 而不是 flex，是因为 flex 的「flex:1 1 50%」在内容超宽时
+ * 会被 min-content 顶开成各自一行（"在办 12" 只有四个字也会被顶开），
+ * 结果变成四行单列。grid 的 1fr 是硬约束，两列就是两列。
+ */
 @media (max-width:620px){
-  .sct-board{flex-wrap:wrap}
-  .sct-board-cell{flex:1 1 50%;border-right:1px solid var(--zw-line)}
+  .sct-board{display:grid;grid-template-columns:1fr 1fr}
+  .sct-board-cell{border-right:1px solid var(--zw-line);padding:10px 12px;min-width:0}
   .sct-board-cell:nth-child(2n){border-right:0}
   .sct-board-cell:nth-child(-n+2){border-bottom:1px solid var(--zw-line)}
+  .sct-board-cell strong{font-size:14px}
+  /* 两列布局下右侧不留白，占位条不需要 */
+  .sct-board::after{display:none}
 }.sct-eyebrow{font-size:12px;color:var(--zw-muted);letter-spacing:.4px;margin-bottom:10px}
 .sct-hero h1{font-size:30px;line-height:1.35;font-weight:600;letter-spacing:-.6px;overflow-wrap:anywhere}
 .sct-summary{margin-top:8px;color:var(--zw-muted);font-size:14px;overflow-wrap:anywhere}
@@ -3290,11 +3311,11 @@ window.__ModuleLoader__.load({
                     : t('board.noOverdue'),
               },
               h('span', { className: 'sct-board-key' }, t('board.overdue')),
-              h(
-                'strong',
-                null,
-                boardSummary.overdueAmount > 0 ? compactMoney(boardSummary.overdueAmount) : '—',
-              ),
+              boardSummary.overdueAmount > 0
+                ? h('strong', null, compactMoney(boardSummary.overdueAmount))
+                // 没有逾期时给一个弱化的破折号：有意义（说明这项是干净的），
+                // 但不要和真实数字一样黑，否则扫视时会被当成"有数"
+                : h('strong', { className: 'sct-board-empty' }, '—'),
             ),
             h(
               'span',
@@ -3303,7 +3324,9 @@ window.__ModuleLoader__.load({
                 title: (board.risks || []).map((r) => `${r.label} ${r.count}`).join('｜') || t('board.noRisk'),
               },
               h('span', { className: 'sct-board-key' }, t('board.risk')),
-              h('strong', null, boardSummary.riskCount > 0 ? String(boardSummary.riskCount) : '—'),
+              boardSummary.riskCount > 0
+                ? h('strong', null, String(boardSummary.riskCount))
+                : h('strong', { className: 'sct-board-empty' }, '—'),
             ),
           )
         : null;
