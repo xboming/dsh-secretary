@@ -199,6 +199,101 @@ window.__ModuleLoader__.load({
   --zw-data-w:calc(var(--zw-shell-max) - var(--zw-shell-pad) * 2 - var(--zw-aside-w) - var(--zw-layout-gap));
 }
 .sct-shell{max-width:var(--zw-shell-max);margin:0 auto;padding:0 var(--zw-shell-pad);width:100%;flex:1;min-height:0;display:flex;flex-direction:column;min-width:0}
+/* ── 数据看板页 ── */
+.sct-board-page{display:flex;flex-direction:column;gap:22px;padding-top:4px}
+.sct-boardbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.sct-boardbar-tabs{display:inline-flex;border:1px solid var(--zw-line);border-radius:8px;overflow:hidden}
+.sct-winbtn{border:0;background:transparent;color:var(--zw-muted);font-size:12.5px;padding:7px 14px;cursor:pointer;font-family:inherit}
+.sct-winbtn:hover{background:var(--zw-hover)}
+.sct-winbtn.is-active{background:var(--zw-accent-soft);color:var(--zw-text);font-weight:600}
+.sct-winbtn+.sct-winbtn{border-left:1px solid var(--zw-line)}
+.sct-boardbar-dates{display:flex;align-items:center;gap:7px}
+.sct-boardbar-dates input{border:1px solid var(--zw-line);background:var(--dsw-alias-bg-layer-1);color:var(--zw-text);border-radius:7px;padding:6px 9px;font-size:12.5px;font-family:inherit}
+.sct-boardbar-sep{color:var(--zw-muted);font-size:12px}
+.sct-boardbar-label{font-size:12.5px;color:var(--zw-muted);margin-left:auto}
+
+/* 关键数字：四格等宽，但用 grid 保证窄屏不塌 */
+.sct-board-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--zw-line);border:1px solid var(--zw-line);border-radius:10px;overflow:hidden}
+.sct-kpi{display:flex;flex-direction:column;gap:3px;padding:14px 16px;background:var(--dsw-alias-bg-layer-1)}
+.sct-kpi-key{font-size:11.5px;color:var(--zw-muted)}
+.sct-kpi strong{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1.1}
+.sct-kpi-note{font-size:10.5px;color:var(--zw-muted);opacity:.8}
+
+.sct-block{display:flex;flex-direction:column;gap:10px}
+.sct-block-title{font-size:12px;font-weight:600;color:var(--zw-muted);letter-spacing:.3px;margin:0}
+.sct-block-title:not(:first-child){margin-top:14px}
+
+/*
+ * 各领域汇总表：领域名放得宽，数字列固定窄。
+ *
+ * 四列都用 1fr 会让数字飘到格子中间，眼睛要横跨大半屏才能把
+ * "项目销售"和它的"2"对上。数字列固定 76px 更紧凑。
+ */
+.sct-btable{border:1px solid var(--zw-line);border-radius:9px;overflow:hidden}
+.sct-btable-row{display:grid;grid-template-columns:minmax(120px,1fr) repeat(4,76px);gap:0;align-items:center}
+.sct-btable-row>span{padding:9px 12px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center}
+.sct-btable-row>span:first-child{text-align:left;padding-left:16px}
+.sct-btable-row>span:not(:first-child){text-align:right;padding-right:16px}
+.sct-btable-row+.sct-btable-row{border-top:1px solid var(--zw-line)}
+.sct-btable-head{background:var(--zw-raised)}
+.sct-btable-head>span{font-size:11.5px;color:var(--zw-muted);font-weight:500}
+.sct-btable-name{font-weight:500}
+.sct-btable-pos{color:var(--zw-warning)}
+.sct-btable-ok{color:var(--zw-success, #3fb950)}
+.sct-btable-bad{color:var(--zw-danger)}
+
+/* 漏斗：一段一段横向排，用箭头连起来 */
+.sct-funnel{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+.sct-funnel-seg{display:flex;flex-direction:column;gap:2px;padding:11px 15px;border:1px solid var(--zw-line);border-radius:9px;min-width:120px;position:relative}
+.sct-funnel-seg+.sct-funnel-seg{margin-left:26px}
+.sct-funnel-label{font-size:11.5px;color:var(--zw-muted)}
+.sct-funnel-seg strong{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
+.sct-funnel-amount{font-size:11.5px;color:var(--zw-muted)}
+.sct-funnel-stuck{font-size:10.5px;color:var(--zw-warning);margin-top:2px}
+.sct-funnel-arrow{position:absolute;right:-21px;top:50%;transform:translateY(-50%);color:var(--zw-muted);font-size:14px}
+
+/* 回款：两列小表 */
+.sct-pay{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--zw-line);border:1px solid var(--zw-line);border-radius:9px;overflow:hidden}
+.sct-pay-row{display:flex;justify-content:space-between;align-items:baseline;padding:9px 14px;background:var(--dsw-alias-bg-layer-1);font-size:13px}
+.sct-pay-row span{color:var(--zw-muted);font-size:12px}
+.sct-pay-row strong{font-variant-numeric:tabular-nums}
+.sct-pay-sep{display:none}
+
+/* 趋势：12 根柱子 */
+.sct-trend{display:flex;align-items:flex-end;gap:6px;height:110px;padding:8px 0 0}
+.sct-trend-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;min-width:0;height:100%;position:relative}
+.sct-trend-col.is-in-window{background:linear-gradient(to top,rgba(121,192,255,.07),transparent);border-radius:5px}
+.sct-trend-bars{display:flex;align-items:flex-end;justify-content:center;gap:3px;flex:1;width:100%}
+.sct-trend-bar{width:7px;border-radius:2px 2px 0 0;min-height:2px}
+.sct-trend-created{background:#79c0ff}
+.sct-trend-completed{background:#3fb950}
+.sct-trend-label{font-size:10px;color:var(--zw-muted);white-space:nowrap}
+.sct-trend-legend{display:flex;gap:16px;font-size:11.5px;color:var(--zw-muted)}
+.sct-dot{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.sct-dot-created{background:#79c0ff}
+.sct-dot-completed{background:#3fb950}
+
+/* 风险 */
+.sct-risks{display:flex;flex-direction:column;gap:1px;background:var(--zw-line);border:1px solid var(--zw-line);border-radius:9px;overflow:hidden}
+.sct-risk{display:flex;align-items:baseline;gap:10px;padding:10px 14px;background:var(--dsw-alias-bg-layer-1)}
+.sct-risk-label{font-size:13px;font-weight:500;min-width:88px}
+.sct-risk strong{font-variant-numeric:tabular-nums;font-size:15px}
+.sct-risk-note{font-size:11.5px;color:var(--zw-muted);margin-left:auto;text-align:right}
+.sct-risk-high .sct-risk-label,.sct-risk-high strong{color:var(--zw-danger)}
+.sct-risk-medium .sct-risk-label{color:var(--zw-warning)}
+.sct-board-hint{font-size:12.5px;color:var(--zw-muted);margin:0;padding:10px 0}
+
+@media (max-width:620px){
+  .sct-board-kpis{grid-template-columns:1fr 1fr}
+  /* 窄屏：数字列压到 52px，否则五个格子放不下 */
+  .sct-btable-row{grid-template-columns:minmax(84px,1fr) repeat(4,52px)}
+  .sct-btable-row>span{padding:8px 6px;font-size:12px}
+  .sct-btable-row>span:first-child{padding-left:10px}
+  .sct-btable-row>span:not(:first-child){padding-right:8px}
+  .sct-pay{grid-template-columns:1fr}
+  .sct-boardbar-label{margin-left:0;width:100%}
+}
+
 .sct-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:36px 0 28px;flex:none}
 /* 数据看板：顶部常驻摘要条。数值用等宽数字，位数变化时不会左右跳 */
 .sct-board{display:flex;gap:0;flex:none;margin:0 0 18px;border:1px solid var(--zw-line);border-radius:10px;overflow:hidden;background:var(--dsw-alias-bg-layer-1)}
@@ -799,6 +894,44 @@ window.__ModuleLoader__.load({
         'tab.pending': '待办事项',
         'tab.all': '全部记录',
         'tab.customers': '客户台账',
+        'tab.board': '数据看板',
+        // ── 数据看板页 ──
+        'board.windowLabel': '统计时间范围',
+        'board.winMonth': '本月',
+        'board.winQuarter': '本季',
+        'board.winCustom': '自定义',
+        'board.from': '开始日期',
+        'board.to': '结束日期',
+        'board.open': '在办',
+        'board.created': '本期新增',
+        'board.completed': '本期完成',
+        'board.completionRate': '完成率',
+        // 余额 vs 流量：这两类数放在一起必须标清楚，否则用户会拿"本月新增 3"和"在办 12"瞎比
+        'board.balanceNote': '期末余额',
+        'board.flowNote': '期内',
+        'board.rateNote': '完成÷新增',
+        'board.blockDomains': '各项工作',
+        'board.blockFunnel': '销售链条',
+        'board.blockPay': '回款',
+        'board.blockTrend': '近 12 个月',
+        'board.blockRisks': '风险',
+        'board.colDomain': '领域',
+        'board.colOpen': '在办',
+        'board.colCreated': '新增',
+        'board.colCompleted': '完成',
+        'board.colOverdue': '逾期',
+        'board.stuckDays': '最久 {n} 天',
+        'board.receivable': '应收',
+        'board.received': '已收',
+        'board.outstanding': '待收',
+        'board.overdue': '逾期',
+        'board.dueInWindow': '本期该收',
+        'board.receivedInWindow': '本期收到',
+        'board.legendCreated': '新建',
+        'board.legendCompleted': '完成',
+        'board.emptyDomains': '这段时间还没有记录。',
+        'board.noRisk': '没有需要处理的风险项',
+        'board.loadError': '看板加载失败',
         // 数据看板：顶部常驻摘要条的四格
         'board.label': '数据看板',
         'board.open': '在办',
@@ -1023,6 +1156,42 @@ window.__ModuleLoader__.load({
         'tab.pending': 'To-do',
         'tab.all': 'All records',
         'tab.customers': 'Customers',
+        'tab.board': 'Data board',
+        'board.windowLabel': 'Period',
+        'board.winMonth': 'This month',
+        'board.winQuarter': 'This quarter',
+        'board.winCustom': 'Custom',
+        'board.from': 'From',
+        'board.to': 'To',
+        'board.open': 'Open',
+        'board.created': 'Created',
+        'board.completed': 'Completed',
+        'board.completionRate': 'Completion',
+        'board.balanceNote': 'balance',
+        'board.flowNote': 'in period',
+        'board.rateNote': 'done ÷ created',
+        'board.blockDomains': 'Work by area',
+        'board.blockFunnel': 'Sales pipeline',
+        'board.blockPay': 'Payments',
+        'board.blockTrend': 'Last 12 months',
+        'board.blockRisks': 'Risks',
+        'board.colDomain': 'Area',
+        'board.colOpen': 'Open',
+        'board.colCreated': 'New',
+        'board.colCompleted': 'Done',
+        'board.colOverdue': 'Overdue',
+        'board.stuckDays': 'stuck {n}d',
+        'board.receivable': 'Receivable',
+        'board.received': 'Received',
+        'board.outstanding': 'Outstanding',
+        'board.overdue': 'Overdue',
+        'board.dueInWindow': 'Due in period',
+        'board.receivedInWindow': 'Received in period',
+        'board.legendCreated': 'New',
+        'board.legendCompleted': 'Done',
+        'board.emptyDomains': 'No records in this period.',
+        'board.noRisk': 'Nothing needs attention',
+        'board.loadError': 'Could not load the board',
         // Data board: the four cells of the persistent summary bar
         'board.label': 'Data board',
         'board.open': 'Open',
@@ -2359,6 +2528,30 @@ window.__ModuleLoader__.load({
       const tabState = useState('pending');
       const tab = tabState[0];
       const setTab = tabState[1];
+      /**
+       * 数据看板的时间窗口与数据。
+       *
+       * ── 为什么窗口状态放在组件里，不放进快照 ──
+       * 快照是所有页签共用的、每次轮询都会刷新的。把"我看的是哪个月"
+       * 放进去，会导致切一下窗口就触发整个面板重算，而且刷新后选择会丢。
+       * 放在组件状态里，切页签回来还是原来看的那个月。
+       *
+       * ── 为什么单独请求而不复用 snapshot.board ──
+       * snapshot 里的 board 只能是"当前月"（它不带参数）。
+       * 要支持任意区间，必须有独立的带参请求。
+       */
+      const boardWindowState = useState({ kind: 'month', from: '', to: '' });
+      const boardWindow = boardWindowState[0];
+      const setBoardWindow = boardWindowState[1];
+      const boardDataState = useState(null);
+      const boardData = boardDataState[0];
+      const setBoardData = boardDataState[1];
+      const boardLoadingState = useState(false);
+      const boardLoading = boardLoadingState[0];
+      const setBoardLoading = boardLoadingState[1];
+      const boardErrorState = useState(null);
+      const boardError = boardErrorState[0];
+      const setBoardError = boardErrorState[1];
       const scopeState = useState('user');
       const scope = scopeState[0];
       const setScope = scopeState[1];
@@ -2533,9 +2726,43 @@ window.__ModuleLoader__.load({
         [search, scope, tab, snap.data],
       );
 
+      /**
+       * 看板取数。
+       *
+       * 只在**看板页签可见时**请求：其他页签用不到这份数据，
+       * 每次轮询都去算一遍是白费（它要扫全部记录做聚合）。
+       */
+      useEffect(
+        function () {
+          if (tab !== 'board') return undefined;
+          let cancelled = false;
+          setBoardLoading(true);
+          setBoardError(null);
+          const params = new URLSearchParams({ window: boardWindow.kind });
+          if (boardWindow.kind === 'custom') {
+            if (boardWindow.from) params.set('from', boardWindow.from);
+            if (boardWindow.to) params.set('to', boardWindow.to);
+          }
+          request('/board?' + params.toString())
+            .then(function (data) {
+              if (cancelled) return;
+              setBoardData(data && data.board ? data.board : data);
+              setBoardLoading(false);
+            })
+            .catch(function (error) {
+              if (cancelled) return;
+              setBoardError(String((error && error.message) || error));
+              setBoardLoading(false);
+            });
+          return function () {
+            cancelled = true;
+          };
+        },
+        [tab, boardWindow.kind, boardWindow.from, boardWindow.to],
+      );
+
       /** 切换排序：只影响前端展示顺序，不改数据 */
-      const sortItems = useCallback(function (list) {
-        const copy = list.slice();
+      const sortItems = useCallback(function (list) {        const copy = list.slice();
         if (ordering === 'due') {
           copy.sort(function (a, b) {
             const da = a.deadline || '9999-12-31';
@@ -3536,8 +3763,17 @@ window.__ModuleLoader__.load({
        *   - 只有活动 tab 的 tabIndex 为 0（roving tabindex）
        *   - ←/→ 移动焦点，Home/End 跳到首尾，Enter/Space 或点击才切换
        */
-      const TAB_IDS = { pending: 'sct-tab-pending', all: 'sct-tab-all' };
-      const TAB_ORDER = ['pending', 'all'];
+      /**
+       * 页签顺序与 id。
+       *
+       * 这里的顺序就是键盘左右键的移动顺序，必须和渲染顺序一致，
+       * 否则用方向键会在"看着相邻"和"实际相邻"之间产生错位。
+       * customers 是条件显示的，按"存在时排最后"处理。
+       */
+      const TAB_IDS = { pending: 'sct-tab-pending', all: 'sct-tab-all', board: 'sct-tab-board', customers: 'sct-tab-customers' };
+      const TAB_ORDER = ['pending', 'all', 'board'];
+      // 客户台账存在时才进键盘序列
+      if (customers.length) TAB_ORDER.push('customers');
       const tabRefs = useRef({});
 
       const focusTab = function (key) {
@@ -3581,7 +3817,8 @@ window.__ModuleLoader__.load({
             onClick: function () { setTab(key); },
           },
           label,
-          h('span', { className: 'sct-count' }, String(count)),
+          // count 为 null 时不显示角标（数据看板不需要计数，它本身就是汇总）
+          count === null || count === undefined ? null : h('span', { className: 'sct-count' }, String(count)),
         );
       };
 
@@ -3590,6 +3827,14 @@ window.__ModuleLoader__.load({
         { className: 'sct-tabs', role: 'tablist', 'aria-label': t('tab.list') },
         makeTab('pending', t('tab.pending'), pendingCount),
         makeTab('all', t('tab.all'), totalCount),
+        /**
+         * 数据看板页签：**始终显示**，和客户台账不同。
+         *
+         * 看板是"这段时间各项工作怎么样"，即使一条记录都没有，
+         * 它也回答了"这段时间我什么都没干"——那是有意义的信息，
+         * 不该藏起来让用户以为功能不存在。空态由页面内的空提示承担。
+         */
+        makeTab('board', t('tab.board'), null),
         /**
          * 客户台账页签：只在**确实有客户数据**时才出现。
          * 一条客户都没有时显示一个空页签，用户会以为功能坏了。
@@ -3783,6 +4028,320 @@ window.__ModuleLoader__.load({
             ),
           );
         }
+      } else if (tab === 'board') {
+        listContent = renderBoard();
+      /**
+       * 数据看板页面。
+       *
+       * 四个区块，从上到下按"先看结果、再看过程"排：
+       *   ① 本期概况：几个关键数字（在办/新增/完成/完成率）
+       *   ② 各领域汇总：每行一个域，在办/新增/完成/逾期
+       *   ③ 销售链条 + 回款：横向的业务分布与钱
+       *   ④ 月度趋势：近 12 个月的新建与完成，窗口内的月份高亮
+       *
+       * ── 为什么"在办"要标成余额 ──
+       * 它是"当前还没收口的条数"，**不受时间窗口影响**；
+       * 而"新增""完成"是期内流量。两类数放一起，不标清楚用户会乱比
+       * （比如拿"本月新增 3"去和"在办 12"较劲）。所以行内用小字标了"期末"。
+       */
+      function renderBoard() {
+        if (boardError) {
+          return h(
+            'div',
+            { className: 'sct-empty', role: 'alert' },
+            h('h2', null, t('board.loadError')),
+            h('p', null, boardError),
+          );
+        }
+        if (boardLoading && !boardData) return h(Skeleton, null);
+        if (!boardData) return h(Skeleton, null);
+        const board = boardData;
+
+        const money = compactMoney;
+
+        /* ── 时间窗口切换 ── */
+        const windowBar = h(
+          'div',
+          { className: 'sct-boardbar' },
+          h(
+            'div',
+            { className: 'sct-boardbar-tabs', role: 'group', 'aria-label': t('board.windowLabel') },
+            ...[
+              ['month', t('board.winMonth')],
+              ['quarter', t('board.winQuarter')],
+              ['custom', t('board.winCustom')],
+            ].map(function (pair) {
+              const key = pair[0];
+              const label = pair[1];
+              const active = boardWindow.kind === key;
+              return h(
+                'button',
+                {
+                  key: key,
+                  type: 'button',
+                  className: active ? 'sct-winbtn is-active' : 'sct-winbtn',
+                  'aria-pressed': active ? 'true' : 'false',
+                  onClick: function () {
+                    setBoardWindow({ kind: key, from: boardWindow.from, to: boardWindow.to });
+                  },
+                },
+                label,
+              );
+            }),
+          ),
+          boardWindow.kind === 'custom'
+            ? h(
+                'div',
+                { className: 'sct-boardbar-dates' },
+                h('input', {
+                  type: 'date',
+                  'aria-label': t('board.from'),
+                  value: boardWindow.from || board.window.from,
+                  onChange: function (e) {
+                    setBoardWindow({ kind: 'custom', from: e.target.value, to: boardWindow.to });
+                  },
+                }),
+                h('span', { className: 'sct-boardbar-sep' }, '~'),
+                h('input', {
+                  type: 'date',
+                  'aria-label': t('board.to'),
+                  value: boardWindow.to || board.window.to,
+                  onChange: function (e) {
+                    setBoardWindow({ kind: 'custom', from: boardWindow.from, to: e.target.value });
+                  },
+                }),
+              )
+            : null,
+          h('span', { className: 'sct-boardbar-label' }, board.window.label),
+        );
+
+        /* ── ① 本期概况 ── */
+        const totalsRow = h(
+          'div',
+          { className: 'sct-board-kpis' },
+          h(
+            'div',
+            { className: 'sct-kpi' },
+            h('span', { className: 'sct-kpi-key' }, t('board.open')),
+            h('strong', null, String(board.totals.open)),
+            h('span', { className: 'sct-kpi-note' }, t('board.balanceNote')),
+          ),
+          h(
+            'div',
+            { className: 'sct-kpi' },
+            h('span', { className: 'sct-kpi-key' }, t('board.created')),
+            h('strong', null, String(board.totals.created)),
+            h('span', { className: 'sct-kpi-note' }, t('board.flowNote')),
+          ),
+          h(
+            'div',
+            { className: 'sct-kpi' },
+            h('span', { className: 'sct-kpi-key' }, t('board.completed')),
+            h('strong', null, String(board.totals.completed)),
+            h('span', { className: 'sct-kpi-note' }, t('board.flowNote')),
+          ),
+          h(
+            'div',
+            { className: 'sct-kpi' },
+            h('span', { className: 'sct-kpi-key' }, t('board.completionRate')),
+            h(
+              'strong',
+              null,
+              board.totals.completionRate === null ? '—' : board.totals.completionRate + '%',
+            ),
+            h('span', { className: 'sct-kpi-note' }, t('board.rateNote')),
+          ),
+        );
+
+        /* ── ② 各领域汇总 ── */
+        const domainTable = board.domains.length
+          ? h(
+              'div',
+              { className: 'sct-btable' },
+              h(
+                'div',
+                { className: 'sct-btable-row sct-btable-head' },
+                h('span', null, t('board.colDomain')),
+                h('span', null, t('board.colOpen')),
+                h('span', null, t('board.colCreated')),
+                h('span', null, t('board.colCompleted')),
+                h('span', null, t('board.colOverdue')),
+              ),
+              ...board.domains.map(function (row) {
+                return h(
+                  'div',
+                  { key: row.id, className: 'sct-btable-row' },
+                  h('span', { className: 'sct-btable-name' }, row.name),
+                  h('span', null, String(row.open)),
+                  h('span', { className: 'sct-btable-pos' }, row.created ? '+' + row.created : '—'),
+                  h('span', { className: 'sct-btable-ok' }, row.completed ? String(row.completed) : '—'),
+                  h(
+                    'span',
+                    { className: row.overdue ? 'sct-btable-bad' : '' },
+                    row.overdue ? String(row.overdue) : '—',
+                  ),
+                );
+              }),
+            )
+          : h('p', { className: 'sct-board-hint' }, t('board.emptyDomains'));
+
+        /* ── ③ 漏斗 ── */
+        const funnelRow = h(
+          'div',
+          { className: 'sct-funnel' },
+          ...board.funnel.map(function (seg, i) {
+            return h(
+              'div',
+              { key: seg.key, className: 'sct-funnel-seg' },
+              h('span', { className: 'sct-funnel-label' }, seg.label),
+              h('strong', null, String(seg.count)),
+              h('span', { className: 'sct-funnel-amount' }, seg.amountLabel + ' ' + money(seg.amount)),
+              seg.stuck
+                ? h('span', { className: 'sct-funnel-stuck', title: seg.stuck.title }, fill(t('board.stuckDays'), seg.stuck.days))
+                : null,
+              i < board.funnel.length - 1 ? h('span', { className: 'sct-funnel-arrow', 'aria-hidden': 'true' }, '→') : null,
+            );
+          }),
+        );
+
+        /* ── ③ 回款 ── */
+        const payBlock = h(
+          'div',
+          { className: 'sct-pay' },
+          h(
+            'div',
+            { className: 'sct-pay-row' },
+            h('span', null, t('board.receivable')),
+            h('strong', null, money(board.payments.receivable)),
+          ),
+          h(
+            'div',
+            { className: 'sct-pay-row' },
+            h('span', null, t('board.received')),
+            h('strong', { className: 'sct-btable-ok' }, money(board.payments.received)),
+          ),
+          h(
+            'div',
+            { className: 'sct-pay-row' },
+            h('span', null, t('board.outstanding')),
+            h('strong', null, money(board.payments.outstanding)),
+          ),
+          h(
+            'div',
+            { className: 'sct-pay-row' },
+            h('span', null, t('board.overdue')),
+            h(
+              'strong',
+              { className: board.payments.overdueAmount ? 'sct-btable-bad' : '' },
+              board.payments.overdueAmount ? money(board.payments.overdueAmount) : '—',
+            ),
+          ),
+          h('div', { className: 'sct-pay-sep' }),
+          h(
+            'div',
+            { className: 'sct-pay-row sct-pay-window' },
+            h('span', null, t('board.dueInWindow')),
+            h('strong', null, money(board.payments.dueInWindow)),
+          ),
+          h(
+            'div',
+            { className: 'sct-pay-row sct-pay-window' },
+            h('span', null, t('board.receivedInWindow')),
+            h('strong', null, money(board.payments.receivedInWindow)),
+          ),
+        );
+
+        /* ── ④ 月度趋势 ── */
+        const peak = Math.max(1, board.trend.peak);
+        const trendBlock = h(
+          'div',
+          { className: 'sct-trend' },
+          ...board.trend.months.map(function (m) {
+            const hc = Math.round((m.created / peak) * 100);
+            const hd = Math.round((m.completed / peak) * 100);
+            return h(
+              'div',
+              {
+                key: m.key,
+                className: m.inWindow ? 'sct-trend-col is-in-window' : 'sct-trend-col',
+                title: `${m.key}　新建 ${m.created}　完成 ${m.completed}`,
+              },
+              h(
+                'div',
+                { className: 'sct-trend-bars' },
+                h('span', { className: 'sct-trend-bar sct-trend-created', style: { height: Math.max(2, hc) + '%' } }),
+                h('span', { className: 'sct-trend-bar sct-trend-completed', style: { height: Math.max(2, hd) + '%' } }),
+              ),
+              h('span', { className: 'sct-trend-label' }, m.label),
+            );
+          }),
+        );
+
+        const legend = h(
+          'div',
+          { className: 'sct-trend-legend' },
+          h('span', null, h('i', { className: 'sct-dot sct-dot-created' }), t('board.legendCreated')),
+          h('span', null, h('i', { className: 'sct-dot sct-dot-completed' }), t('board.legendCompleted')),
+        );
+
+        /* ── 风险 ── */
+        const riskBlock = board.risks.length
+          ? h(
+              'div',
+              { className: 'sct-risks' },
+              ...board.risks.map(function (r) {
+                return h(
+                  'div',
+                  { key: r.kind, className: 'sct-risk sct-risk-' + r.level },
+                  h('span', { className: 'sct-risk-label' }, r.label),
+                  h('strong', null, String(r.count)),
+                  h('span', { className: 'sct-risk-note' }, r.note || ''),
+                );
+              }),
+            )
+          : h('p', { className: 'sct-board-hint' }, t('board.noRisk'));
+
+        return h(
+          'div',
+          { className: 'sct-board-page' },
+          windowBar,
+          totalsRow,
+
+          h(
+            'section',
+            { className: 'sct-block' },
+            h('h3', { className: 'sct-block-title' }, t('board.blockDomains')),
+            domainTable,
+          ),
+
+          h(
+            'section',
+            { className: 'sct-block' },
+            h('h3', { className: 'sct-block-title' }, t('board.blockFunnel')),
+            funnelRow,
+            h('h3', { className: 'sct-block-title' }, t('board.blockPay')),
+            payBlock,
+          ),
+
+          h(
+            'section',
+            { className: 'sct-block' },
+            h('h3', { className: 'sct-block-title' }, t('board.blockTrend')),
+            trendBlock,
+            legend,
+          ),
+
+          board.risks.length
+            ? h(
+                'section',
+                { className: 'sct-block' },
+                h('h3', { className: 'sct-block-title' }, t('board.blockRisks')),
+                riskBlock,
+              )
+            : null,
+        );
+      }
+
       } else if (tab === 'customers') {
         listContent = customers.length
           ? h(
