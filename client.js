@@ -4210,8 +4210,16 @@ window.__ModuleLoader__.load({
             h('p', null, boardError),
           );
         }
-        if (!board) return h(Skeleton, null);
+        if (!boardData) return h(Skeleton, null);
 
+        /**
+         * 局部别名。
+         *
+         * 组件里的状态变量叫 boardData，但函数体里十几处引用都写 board。
+         * 必须在这里建立别名——之前直接写 `if (!board)` 而组件里根本没有
+         * 这个名字，一点开看板页就 ReferenceError，整个插件都用不了。
+         */
+        const board = boardData;
         const st = board.stats;
         const sv = board.statsView;
         const charts = board.charts;
