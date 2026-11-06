@@ -4784,7 +4784,7 @@ window.__ModuleLoader__.load({
               'section',
               { className: 'sct-block' },
               h('h3', { className: 'sct-block-title' }, t('board.blockTrend')),
-              trendBlock,
+              trendChart,
               legend,
             ),
           ),
