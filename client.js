@@ -1061,7 +1061,7 @@ window.__ModuleLoader__.load({
         // 余额 vs 流量：这两类数放在一起必须标清楚，否则用户会拿"本月新增 3"和"在办 12"瞎比
         'board.balanceNote': '期末余额',
         'board.flowNote': '期内',
-        'board.rateNote': '完成÷新增',
+        'board.rateNote': '本期建{0}/{1}',
         'board.blockDomains': '各项工作',
         'board.blockFunnel': '销售链条',
         'board.blockPay': '回款',
@@ -1321,7 +1321,7 @@ window.__ModuleLoader__.load({
         'board.completionRate': 'Completion',
         'board.balanceNote': 'balance',
         'board.flowNote': 'in period',
-        'board.rateNote': 'done ÷ created',
+        'board.rateNote': 'built {0}/{1}',
         'board.blockDomains': 'Work by area',
         'board.blockFunnel': 'Sales pipeline',
         'board.blockPay': 'Payments',
@@ -2948,15 +2948,20 @@ window.__ModuleLoader__.load({
             'div',
             { key: d.key || d.label, className: 'sct-cbar-col', title: (d.sub ? d.sub + '　' : '') + v + unit },
             /**
-             * 数值标签：0 且要求隐藏时给空串。
+             * 数值标签：**窗口外或 0 值时留空**。
              *
-             * 为什么给空串而不是不渲染：保留这个节点，柱子高度才能和
-             * 其它列对齐（否则有值的列会被顶高一截，图看着歪）。
+             * 窗口外的柱子是灰的（is-muted），意思是"这个月不在你选的范围内"。
+             * 灰柱子上还顶着个黑色数字，看起来像"这个月的数也统计进来了"——
+             * 实测就会被误读成"怎么这个月的数也显示了"。
+             * 所以灰柱只留形状，数值去悬浮提示看。
+             *
+             * 为什么给空串而不是不渲染这个节点：保留它，柱子和标签的行高
+             * 才能对齐（否则有值的列会被顶高一截，整张图看着歪）。
              */
             h(
               'span',
               { className: 'sct-cbar-value' + (d.alert ? ' is-alert' : '') },
-              v === 0 && d.hideZero ? '' : v > 0 ? String(v) + unit : '—',
+              d.muted || (v === 0 && d.hideZero) ? '' : v > 0 ? String(v) + unit : '—',
             ),
             h(
               'div',
@@ -4442,6 +4447,22 @@ window.__ModuleLoader__.load({
         );
 
         /* ── ① 本期概况 ── */
+        /**
+         * 四个数字，口径各不相同，必须让用户看出来：
+         *   在办      —— 期末余额（不随窗口变）
+         *   本期新增  —— 期内按 created 归期
+         *   本期完成  —— 期内按 completedAt 归期（含往期建的）
+         *   完成率    —— **本期新建的那些里，做完了多少**（分子是分母的子集）
+         *
+         * ── 为什么完成率下面要单独注明"其中本期新建 X" ──
+         * 这两个数天然可能不相等：本期完成 13 条里，可能有 7 条是九月建的。
+         * 完成率只算"本期新建的消化了多少"，所以它可能是 0%，
+         * 而"本期完成 13 条"照样成立。不标注的话，用户看到
+         * "完成 13 条 / 完成率 0%" 会认为其中一个数字坏了。
+         */
+        const createdDoneCount = board.totals.completionRate === null
+          ? 0
+          : Math.round((board.totals.completionRate / 100) * board.totals.created * 10) / 10;
         const totalsRow = h(
           'div',
           { className: 'sct-board-kpis' },
@@ -4464,7 +4485,11 @@ window.__ModuleLoader__.load({
             { className: 'sct-kpi' },
             h('span', { className: 'sct-kpi-key' }, t('board.completed')),
             h('strong', null, String(board.totals.completed)),
-            h('span', { className: 'sct-kpi-note' }, t('board.flowNote')),
+            h(
+              'span',
+              { className: 'sct-kpi-note', title: '含往期新建、本期完成的记录' },
+              t('board.flowNote'),
+            ),
           ),
           h(
             'div',
@@ -4475,7 +4500,11 @@ window.__ModuleLoader__.load({
               null,
               board.totals.completionRate === null ? '—' : board.totals.completionRate + '%',
             ),
-            h('span', { className: 'sct-kpi-note' }, t('board.rateNote')),
+            h(
+              'span',
+              { className: 'sct-kpi-note', title: '本期新建的记录里，本期完成的比例' },
+              fill(t('board.rateNote'), createdDoneCount || 0, board.totals.created),
+            ),
           ),
         );
 
