@@ -213,12 +213,102 @@ window.__ModuleLoader__.load({
  *
  * 漏斗**必须放宽列**：它天然是横向的"商机 → 项目销售 → 合同 → 实施"，
  * 挤进窄列会变成竖排一堆方块，看上面的箭头就完全断掉了。
- * 这是实测两列方案时踩到的——右列一窄，漏斗立刻塌成竖列。
  *
  * ── 为什么用 minmax(0,1fr) 而不是 1fr ──
  * grid 的 1fr 默认不收缩到内容以下，长文本会把列撑宽、
  * 进而把整个网格挤出容器。minmax(0,1fr) 才允许真正压缩。
  */
+
+/* ── 统计图 ── */
+
+/*
+ * 竖向柱状图：柱顶直接写数值，柱下写标签。
+ *
+ * 高度用 clamp 跟着窗口走，不写死 px：
+ *   矮屏（笔记本可用高约 470px）压到 62px，柱子还不至于看不见；
+ *   高屏最多 110px，再高就浪费——它是概览，不是精确图表。
+ * 数值行和标签行是 flex:none，柱子区 flex:1，所以柱子被压缩时
+ * **数字永远还在**，不会跟着柱子一起消失。
+ */
+.sct-chart-bar{display:flex;align-items:stretch;gap:10px;flex:none;height:clamp(62px,9vh,110px);overflow:hidden}
+.sct-chart-bar.is-sm{height:clamp(56px,8vh,96px)}
+/*
+ * 漏斗区整体：柱状图 + 下面的金额条。
+ * 两者用 gap 隔开，避免标签行和金额行贴在一起（实测会重叠）。
+ */
+.sct-funnel-wrap{display:flex;flex-direction:column;gap:6px;min-width:0}
+/*
+ * 每列是"数值 / 柱子 / 标签"三段竖排。
+ *
+ * ── 为什么整列要固定高度、柱子段吃剩余 ──
+ * 只给外层 .sct-chart-bar 定高、列内用 height:100% 时，
+ * 三段的自然高度之和可能超过容器，超出部分**溢出到容器外**，
+ * 压住下面那一行（实测就是标签和金额条重叠）。
+ * 改成：整列 height:100%，数值行与标签行 flex:none 固定，
+ * 柱子段 flex:1 + min-height:0 吸收剩余——三段就都被关在容器里。
+ */
+.sct-cbar-col{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:2px;overflow:hidden}
+/* 数值始终在柱子上方，柱子再高也不会被挤掉 */
+.sct-cbar-value{font-size:11px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--zw-text);line-height:1;white-space:nowrap;flex:none;height:12px;display:flex;align-items:flex-end}
+.sct-cbar-value.is-alert{color:var(--zw-danger)}
+/* 柱子段：吸收剩余高度；min-height:0 是它能被压缩的关键 */
+.sct-cbar-track{width:100%;flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center}
+.sct-cbar-fill{width:min(100%,30px);background:var(--zw-accent);border-radius:3px 3px 0 0}
+.sct-cbar-fill.is-alert{background:var(--zw-danger)}
+/* 弱化的柱子（不在当前窗口内）：留形不留势 */
+.sct-cbar-fill.is-muted{background:var(--zw-line-strong);opacity:.55}
+.sct-cbar-label{font-size:10px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;flex:none;height:13px;display:flex;align-items:flex-end}
+
+/* 横向条形图：每行一个领域，条右侧写在办数 */
+.sct-chart-hbar{display:flex;flex-direction:column;gap:7px}
+.sct-hbar-row{display:grid;grid-template-columns:minmax(56px,auto) minmax(0,1fr) auto;align-items:center;gap:9px}
+.sct-hbar-name{font-size:12px;color:var(--zw-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sct-hbar-track{display:flex;height:11px;border-radius:3px;background:var(--zw-raised);overflow:hidden;min-width:0}
+.sct-hbar-fill{height:100%;border-radius:2px;min-width:2px}
+.sct-hbar-open{background:var(--zw-accent)}
+.sct-hbar-created{background:#58a6ff;opacity:.75}
+.sct-hbar-completed{background:var(--zw-success);opacity:.75}
+.sct-hbar-fill+.sct-hbar-fill{margin-left:2px}
+.sct-hbar-value{font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;display:flex;align-items:baseline;gap:5px}
+.sct-hbar-value strong{font-weight:600;font-size:13px}
+.sct-hbar-value em{font-style:normal;font-size:10.5px;color:var(--zw-muted)}
+
+/* 环形进度 */
+.sct-pay-chart{display:flex;align-items:center;gap:14px;min-width:0}
+.sct-donut{position:relative;flex:none}
+.sct-donut-label{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px}
+.sct-donut-label strong{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1}
+.sct-donut-label span{font-size:9.5px;color:var(--zw-muted)}
+.sct-pay-bars{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px}
+
+/* 堆叠条：已收 / 逾期 / 待收三段 */
+.sct-stack{display:flex;height:12px;border-radius:3px;overflow:hidden;background:var(--zw-raised)}
+.sct-stack-seg{height:100%;min-width:2px}
+.sct-stack-seg+.sct-stack-seg{margin-left:1px}
+.sct-stack-seg.is-got{background:var(--zw-success)}
+.sct-stack-seg.is-overdue{background:var(--zw-danger)}
+.sct-stack-seg.is-pending{background:var(--zw-line-strong)}
+.sct-stack-labels{display:flex;flex-wrap:wrap;gap:4px 10px;font-size:10.5px;color:var(--zw-muted)}
+.sct-stack-labels>span{display:inline-flex;align-items:center;white-space:nowrap}
+.sct-dot-got{background:var(--zw-success)}
+.sct-dot-overdue{background:var(--zw-danger)}
+.sct-dot-pending{background:var(--zw-line-strong)}
+
+/*
+ * 漏斗下方的金额条。
+ *
+ * 柱状图的标签已经写了段名，这里**不再重复段名**（重复会撑爆宽度、
+ * 在窄列里还会重叠）。只写金额与卡住天数，四条横向排、用竖线分隔。
+ * 段名靠位置对应——第 n 条对应第 n 根柱子，柱状图就在上面。
+ */
+.sct-chart-notes{display:flex;align-items:baseline;gap:0;font-size:10.5px;color:var(--zw-muted);margin-top:3px;flex-wrap:nowrap;overflow:hidden}
+.sct-chart-notes>span{display:inline-flex;align-items:baseline;gap:4px;white-space:nowrap;min-width:0;overflow:hidden}
+.sct-chart-notes>span+span{margin-left:8px;padding-left:8px;border-left:1px solid var(--zw-line)}
+.sct-chart-notes b{font-weight:500;color:var(--zw-text);white-space:nowrap}
+.sct-chart-notes em{font-style:normal;color:var(--zw-warning);white-space:nowrap}
+
+/* ── 数据看板页 ── */
+/*
 .sct-board-page{
   display:grid;
   grid-template-columns:minmax(220px,260px) minmax(240px,300px) minmax(0,1fr);
@@ -2823,8 +2913,152 @@ window.__ModuleLoader__.load({
         [tab, boardWindow.kind, boardWindow.from, boardWindow.to],
       );
 
+      /**
+     * ── 统计图组件 ──
+     *
+     * 全部用内联 SVG 手写，不引图表库。理由：
+     *   · 插件跑在宿主页面里，引一个 200KB 的图表库只为四张图不值；
+     *   · 图表库的默认样式和面板的设计令牌对不上，还得覆写一遍；
+     *   · 这四张图结构固定（柱/条/环），手写反而更好控。
+     *
+     * ── 数据标签直接写在图上，不靠悬浮 ──
+     * 用户明确要求"图表上直接标数值"。悬浮提示是补充，不是替代——
+     * 一屏看板扫过去就要能读出数，不该要求鼠标停在每根柱子上。
+     */
+
+    /** 柱状图：给漏斗和趋势共用。values 是 [{ label, value, sub, alert }] */
+    function BarChart(props) {
+      const items = props.items || [];
+      const unit = props.unit || '';
+      const max = Math.max(1, ...items.map((d) => Number(d.value) || 0));
+      /**
+       * 高度**不由 JS 定**，交给 CSS 的 .sct-chart-bar 用 clamp 控制。
+       *
+       * 写死 px 会跟"一屏放下"打架：矮屏撑爆、宽屏又浪费。
+       * CSS 里用 vh 跟着窗口走，这里只负责结构。
+       */
+      return h(
+        'div',
+        { className: 'sct-chart-bar' + (props.size === 'sm' ? ' is-sm' : '') },
+        items.map(function (d) {
+          const v = Number(d.value) || 0;
+          // 有值时至少给 4% 高度，否则 1 和 0 看起来一样
+          const pct = v > 0 ? Math.max(4, (v / max) * 100) : 0;
+          return h(
+            'div',
+            { key: d.key || d.label, className: 'sct-cbar-col', title: (d.sub ? d.sub + '　' : '') + v + unit },
+            /**
+             * 数值标签：0 且要求隐藏时给空串。
+             *
+             * 为什么给空串而不是不渲染：保留这个节点，柱子高度才能和
+             * 其它列对齐（否则有值的列会被顶高一截，图看着歪）。
+             */
+            h(
+              'span',
+              { className: 'sct-cbar-value' + (d.alert ? ' is-alert' : '') },
+              v === 0 && d.hideZero ? '' : v > 0 ? String(v) + unit : '—',
+            ),
+            h(
+              'div',
+              { className: 'sct-cbar-track' },
+              h('span', {
+                className: 'sct-cbar-fill' + (d.alert ? ' is-alert' : '') + (d.muted ? ' is-muted' : ''),
+                style: { height: pct + '%' },
+              }),
+            ),
+            h('span', { className: 'sct-cbar-label' }, d.label),
+          );
+        }),
+      );
+    }
+
+    /** 横向条形图：各领域对比。items 是 [{ label, value }]，可多条 */
+    function HBarChart(props) {
+      const rows = props.rows || [];
+      const max = Math.max(1, ...rows.flatMap((r) => r.series.map((s) => Number(s.value) || 0)));
+      return h(
+        'div',
+        { className: 'sct-chart-hbar' },
+        rows.map(function (r) {
+          return h(
+            'div',
+            { key: r.key, className: 'sct-hbar-row' },
+            h('span', { className: 'sct-hbar-name' }, r.label),
+            h(
+              'div',
+              { className: 'sct-hbar-track' },
+              r.series.map(function (s) {
+                const v = Number(s.value) || 0;
+                const pct = v > 0 ? Math.max(2, (v / max) * 100) : 0;
+                return v > 0
+                  ? h('span', {
+                      key: s.key,
+                      className: 'sct-hbar-fill sct-hbar-' + s.key,
+                      style: { width: pct + '%' },
+                      title: s.label + ' ' + v,
+                    })
+                  : null;
+              }),
+            ),
+            h(
+              'span',
+              { className: 'sct-hbar-value' },
+              // 在办是主数，后面的分项用小字跟在旁边
+              h('strong', null, String(r.total)),
+              r.detail ? h('em', null, r.detail) : null,
+            ),
+          );
+        }),
+      );
+    }
+
+    /** 环形进度：回款。单一比例，标签写百分比 + 金额 */
+    function DonutChart(props) {
+      const pct = Math.max(0, Math.min(100, Number(props.percent) || 0));
+      const size = props.size || 88;
+      const stroke = props.stroke || 9;
+      const r = (size - stroke) / 2;
+      const c = 2 * Math.PI * r;
+      const dash = (pct / 100) * c;
+      return h(
+        'div',
+        { className: 'sct-donut', style: { width: size + 'px', height: size + 'px' } },
+        h(
+          'svg',
+          { width: size, height: size, viewBox: '0 0 ' + size + ' ' + size, 'aria-hidden': 'true' },
+          h('circle', {
+            cx: size / 2,
+            cy: size / 2,
+            r: r,
+            fill: 'none',
+            stroke: 'var(--zw-line)',
+            'stroke-width': stroke,
+          }),
+          h('circle', {
+            cx: size / 2,
+            cy: size / 2,
+            r: r,
+            fill: 'none',
+            stroke: props.alert ? 'var(--zw-danger)' : 'var(--zw-success)',
+            'stroke-width': stroke,
+            'stroke-linecap': 'round',
+            'stroke-dasharray': dash + ' ' + (c - dash),
+            // 从 12 点方向开始顺时针
+            transform: 'rotate(-90 ' + size / 2 + ' ' + size / 2 + ')',
+          }),
+        ),
+        h(
+          'div',
+          { className: 'sct-donut-label' },
+          h('strong', null, props.percentLabel ?? pct + '%'),
+          h('span', null, props.caption || ''),
+        ),
+      );
+    }
+
       /** 切换排序：只影响前端展示顺序，不改数据 */
-      const sortItems = useCallback(function (list) {        const copy = list.slice();
+      const sortItems = useCallback(function (list) {
+        const copy = list.slice();
         if (ordering === 'due') {
           copy.sort(function (a, b) {
             const da = a.deadline || '9999-12-31';
@@ -4277,24 +4511,152 @@ window.__ModuleLoader__.load({
             )
           : h('p', { className: 'sct-board-hint' }, t('board.emptyDomains'));
 
-        /* ── ③ 漏斗 ── */
-        const funnelRow = h(
+        /*
+         * ── ① 漏斗用柱状图 ──
+         * 每一段一根柱，柱顶直接写数量，柱子下方写该段金额。
+         * 为什么不用横向流程条：横向条在窄列会塌，而柱状图在任意宽度下都成立，
+         * 且四段的高度差一眼能看出"货堆在哪一段"。
+         */
+        const funnelChart = h(BarChart, {
+          size: 'sm',
+          items: board.funnel.map(function (seg) {
+            return {
+              key: seg.key,
+              label: seg.label.replace(/管理|交付|销售/g, (m) => (m === '销售' ? '销售' : '')),
+              value: seg.count,
+              sub: seg.amountLabel + ' ' + money(seg.amount) + (seg.stuck ? '　最久 ' + seg.stuck.days + ' 天' : ''),
+              alert: false,
+            };
+          }),
+        });
+
+        /*
+         * 漏斗的金额与卡最久。
+         *
+         * 柱状图只能标数量，金额放不下。但**不能再用一遍段名**——
+         * 柱状图标签已经写了"商机管理"，说明行再写一遍就是重复，
+         * 而且四列挤在一起会重叠（实测截图里两段文字黏成一团）。
+         * 所以这里改成"一行四条、用竖线分隔"的紧凑形式，只写金额与天数。
+         */
+        const funnelLegend = h(
           'div',
-          { className: 'sct-funnel' },
-          ...board.funnel.map(function (seg, i) {
+          { className: 'sct-chart-notes' },
+          ...board.funnel.map(function (seg) {
             return h(
-              'div',
-              { key: seg.key, className: 'sct-funnel-seg' },
-              h('span', { className: 'sct-funnel-label' }, seg.label),
-              h('strong', null, String(seg.count)),
-              h('span', { className: 'sct-funnel-amount' }, seg.amountLabel + ' ' + money(seg.amount)),
-              seg.stuck
-                ? h('span', { className: 'sct-funnel-stuck', title: seg.stuck.title }, fill(t('board.stuckDays'), seg.stuck.days))
-                : null,
-              i < board.funnel.length - 1 ? h('span', { className: 'sct-funnel-arrow', 'aria-hidden': 'true' }, '→') : null,
+              'span',
+              { key: seg.key, title: seg.label + '　' + seg.amountLabel + ' ' + money(seg.amount) },
+              h('b', null, seg.amountLabel + ' ' + money(seg.amount)),
+              seg.stuck ? h('em', null, '卡' + seg.stuck.days + '天') : null,
             );
           }),
         );
+
+        /*
+         * ── ② 各领域对比用横向条形图 ──
+         * 每行一个领域，条长＝在办数，条右侧直接写在办数，
+         * 后面跟着"+新增 / ✓完成 / !逾期"三个小标。
+         */
+        const domainChart = board.domains.length
+          ? h(HBarChart, {
+              rows: board.domains.map(function (row) {
+                const detailBits = [];
+                if (row.created) detailBits.push('+' + row.created);
+                if (row.completed) detailBits.push('✓' + row.completed);
+                if (row.overdue) detailBits.push('!' + row.overdue);
+                return {
+                  key: row.id,
+                  label: row.name,
+                  total: row.open,
+                  detail: detailBits.join(' '),
+                  series: [
+                    { key: 'open', label: '在办', value: row.open },
+                    { key: 'created', label: '新增', value: row.created },
+                    { key: 'completed', label: '完成', value: row.completed },
+                  ],
+                };
+              }),
+            })
+          : h('p', { className: 'sct-board-hint' }, t('board.emptyDomains'));
+
+        /*
+         * ── ③ 回款用环形图 + 堆叠条 ──
+         * 环：已收占合同总额的比例（这是"回款进度"最直观的形态）
+         * 条：到期该收的里面，已收 / 未收 / 逾期三段
+         */
+        const payPercent = board.payments.receivable > 0
+          ? Math.round((board.payments.received / board.payments.receivable) * 1000) / 10
+          : 0;
+        const payDonut = h(DonutChart, {
+          percent: payPercent,
+          percentLabel: board.payments.receivable > 0 ? payPercent + '%' : '—',
+          caption: t('board.payProgress'),
+          alert: board.payments.overdueAmount > 0,
+          size: 84,
+        });
+
+        const payStack = h(
+          'div',
+          { className: 'sct-stack' },
+          (function () {
+            const total = Math.max(1, board.payments.receivable);
+            const got = board.payments.received;
+            const overdue = board.payments.overdueAmount;
+            const pending = Math.max(0, board.payments.outstanding - overdue);
+            const seg = [
+              { key: 'got', label: t('board.received'), value: got, cls: 'is-got' },
+              { key: 'overdue', label: t('board.overdue'), value: overdue, cls: 'is-overdue' },
+              { key: 'pending', label: t('board.outstanding'), value: pending, cls: 'is-pending' },
+            ].filter((s) => s.value > 0);
+            return seg.map(function (s) {
+              return h('span', {
+                key: s.key,
+                className: 'sct-stack-seg ' + s.cls,
+                style: { width: Math.max(2, (s.value / total) * 100) + '%' },
+                title: s.label + ' ' + money(s.value),
+              });
+            });
+          })(),
+        );
+
+        const payLabels = h(
+          'div',
+          { className: 'sct-stack-labels' },
+          h('span', null, h('i', { className: 'sct-dot sct-dot-got' }), t('board.received') + ' ' + money(board.payments.received)),
+          h(
+            'span',
+            null,
+            h('i', { className: 'sct-dot sct-dot-overdue' }),
+            t('board.overdue') + ' ' + (board.payments.overdueAmount ? money(board.payments.overdueAmount) : '—'),
+          ),
+          h(
+            'span',
+            null,
+            h('i', { className: 'sct-dot sct-dot-pending' }),
+            t('board.outstanding') + ' ' + money(board.payments.outstanding),
+          ),
+        );
+
+        /* ── ④ 月度趋势柱状图 ── */
+        const trendChart = h(BarChart, {
+          size: 'sm',
+          items: board.trend.months.map(function (m) {
+            return {
+              key: m.key,
+              label: m.label,
+              /**
+               * 标数值，但**0 值的月不标**。
+               *
+               * 12 根柱子若把 0 也写成"—"，窄列里就是一排横杠，
+               * 既糊又占位置。0 就是没数据，留空最干净。
+               * 有值的月照常标（用户要求"图表上直接标数值"）。
+               */
+              value: m.created,
+              hideZero: true,
+              sub: m.key + '　新建 ' + m.created + '　完成 ' + m.completed,
+              muted: !m.inWindow,
+            };
+          }),
+        });
 
         /* ── ③ 回款 ── */
         const payBlock = h(
@@ -4343,31 +4705,7 @@ window.__ModuleLoader__.load({
           ),
         );
 
-        /* ── ④ 月度趋势 ── */
-        const peak = Math.max(1, board.trend.peak);
-        const trendBlock = h(
-          'div',
-          { className: 'sct-trend' },
-          ...board.trend.months.map(function (m) {
-            const hc = Math.round((m.created / peak) * 100);
-            const hd = Math.round((m.completed / peak) * 100);
-            return h(
-              'div',
-              {
-                key: m.key,
-                className: m.inWindow ? 'sct-trend-col is-in-window' : 'sct-trend-col',
-                title: `${m.key}　新建 ${m.created}　完成 ${m.completed}`,
-              },
-              h(
-                'div',
-                { className: 'sct-trend-bars' },
-                h('span', { className: 'sct-trend-bar sct-trend-created', style: { height: Math.max(2, hc) + '%' } }),
-                h('span', { className: 'sct-trend-bar sct-trend-completed', style: { height: Math.max(2, hd) + '%' } }),
-              ),
-              h('span', { className: 'sct-trend-label' }, m.label),
-            );
-          }),
-        );
+        /* ── ④ 月度趋势（图表已在上方 trendChart 构建） ── */
 
         const legend = h(
           'div',
@@ -4399,7 +4737,7 @@ window.__ModuleLoader__.load({
           windowBar,
           totalsRow,
 
-          /* 左列：各项工作表（窄，只有四个数字列） */
+          /* 左列：各领域对比条形图（带数据标签） */
           h(
             'div',
             { className: 'sct-board-col-left' },
@@ -4407,11 +4745,11 @@ window.__ModuleLoader__.load({
               'section',
               { className: 'sct-block' },
               h('h3', { className: 'sct-block-title' }, t('board.blockDomains')),
-              domainTable,
+              domainChart,
             ),
           ),
 
-          /* 中列：回款 + 风险（都是窄内容） */
+          /* 中列：回款环形图 + 堆叠条，下面是风险 */
           h(
             'div',
             { className: 'sct-board-col-mid' },
@@ -4419,6 +4757,7 @@ window.__ModuleLoader__.load({
               'section',
               { className: 'sct-block' },
               h('h3', { className: 'sct-block-title' }, t('board.blockPay')),
+              h('div', { className: 'sct-pay-chart' }, payDonut, h('div', { className: 'sct-pay-bars' }, payStack, payLabels)),
               payBlock,
             ),
             board.risks.length
@@ -4431,7 +4770,7 @@ window.__ModuleLoader__.load({
               : null,
           ),
 
-          /* 右列：漏斗（要横排四段）+ 趋势（要放 12 根柱子） */
+          /* 右列：漏斗柱状图 + 趋势柱状图 */
           h(
             'div',
             { className: 'sct-board-col-right' },
@@ -4439,7 +4778,7 @@ window.__ModuleLoader__.load({
               'section',
               { className: 'sct-block' },
               h('h3', { className: 'sct-block-title' }, t('board.blockFunnel')),
-              funnelRow,
+              h('div', { className: 'sct-funnel-wrap' }, funnelChart, funnelLegend),
             ),
             h(
               'section',
