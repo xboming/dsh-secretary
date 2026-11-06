@@ -3870,48 +3870,72 @@ window.__ModuleLoader__.load({
        * 所以现在它是**隐式默认范围**：没有任何按钮选中，代表"全看，但不含经验库"。
        * 想只看某个域，点对应域按钮即可。
        */
-      const filter = h(
-        'div',
-        { className: 'sct-filter', role: 'group', 'aria-label': t('filter.label') },
-        /**
-         * 域按钮分两组渲染：待办型域与经验库。
-         * 视觉上分开是因为两者性质不同——左边是"要做什么"，右边是"以前踩过什么"。
-         * 用 lifecycle 判断而不是硬编码 id，自定义的 journal 域也自动归组。
-         */
-        (function () {
-          const todoDomains = visibleDomains.filter(function (d) { return !isJournalDomain(d); });
-          const journalDomains = visibleDomains.filter(isJournalDomain);
-          const makeBtn = function (d) {
-            return h(
-              'button',
-              { key: d.id, type: 'button', 'aria-pressed': effectiveScope === d.id ? 'true' : 'false', onClick: function () { setScope(d.id); } },
-              d.name,
-            );
-          };
-          const nodes = [];
-          todoDomains.forEach(function (d) { nodes.push(makeBtn(d)); });
-          if (journalDomains.length) {
-            nodes.push(h('span', { key: 'sep', className: 'sct-filter-sep', 'aria-hidden': 'true' }, '·'));
-            journalDomains.forEach(function (d) {
-              nodes.push(
-                h(
+      /**
+       * 范围筛选栏：**只有域按钮，没有"全部"**。
+       *
+       * 用户要求删掉那个按钮：它和旁边的域按钮并排，看着像一个域，
+       * 实际语义是"排除经验库之后的全部"，容易误读。
+       *
+       * 但 `'user'` 这个范围值本身**必须保留**：
+       *   · 它是初始默认值（useState('user')）——按钮删了，页面默认仍落在它上面
+       *   · 经验库范围被挡回时（切到待办页）也回落到它
+       * 所以现在它是**隐式默认范围**：没有任何按钮选中，代表"全看，但不含经验库"。
+       * 想只看某个域，点对应域按钮即可。
+       *
+       * ── 看板页与客户台账页**不显示这排按钮** ──
+       * 看板是**全库汇总**：它的"各项工作"区块已经把每个域列成一行了，
+       * 上面再挂一排"只看某域"的按钮会让人以为看板可以按域过滤——
+       * 而它其实不看 scope。两套筛选同时在屏幕上，是纯粹的误导。
+       * 客户台账同理：它按客户聚合，也不是按域筛的。
+       *
+       * 这是用户直接指出来的：域导航和看板没有关系。
+       */
+      const showScopeFilter = tab !== 'board' && tab !== 'customers';
+
+      const filter = showScopeFilter
+        ? h(
+            'div',
+            { className: 'sct-filter', role: 'group', 'aria-label': t('filter.label') },
+            /**
+             * 域按钮分两组渲染：待办型域与经验库。
+             * 视觉上分开是因为两者性质不同——左边是"要做什么"，右边是"以前踩过什么"。
+             * 用 lifecycle 判断而不是硬编码 id，自定义的 journal 域也自动归组。
+             */
+            (function () {
+              const todoDomains = visibleDomains.filter(function (d) { return !isJournalDomain(d); });
+              const journalDomains = visibleDomains.filter(isJournalDomain);
+              const makeBtn = function (d) {
+                return h(
                   'button',
-                  {
-                    key: d.id,
-                    type: 'button',
-                    className: 'sct-filter-journal',
-                    'aria-pressed': effectiveScope === d.id ? 'true' : 'false',
-                    title: t('filter.journalHint'),
-                    onClick: function () { setScope(d.id); },
-                  },
+                  { key: d.id, type: 'button', 'aria-pressed': effectiveScope === d.id ? 'true' : 'false', onClick: function () { setScope(d.id); } },
                   d.name,
-                ),
-              );
-            });
-          }
-          return nodes;
-        })(),
-      );
+                );
+              };
+              const nodes = [];
+              todoDomains.forEach(function (d) { nodes.push(makeBtn(d)); });
+              if (journalDomains.length) {
+                nodes.push(h('span', { key: 'sep', className: 'sct-filter-sep', 'aria-hidden': 'true' }, '·'));
+                journalDomains.forEach(function (d) {
+                  nodes.push(
+                    h(
+                      'button',
+                      {
+                        key: d.id,
+                        type: 'button',
+                        className: 'sct-filter-journal',
+                        'aria-pressed': effectiveScope === d.id ? 'true' : 'false',
+                        title: t('filter.journalHint'),
+                        onClick: function () { setScope(d.id); },
+                      },
+                      d.name,
+                    ),
+                  );
+                });
+              }
+              return nodes;
+            })(),
+          )
+        : null;
 
       let listContent;
 
@@ -3982,8 +4006,14 @@ window.__ModuleLoader__.load({
         );
       } else if (!data) {
         listContent = h(Skeleton, null);
-      } else if (search.trim()) {
-        // 搜索态：直接展示命中结果，不分页签/分组——找东西时不该被层级打断
+      } else if (search.trim() && tab !== 'board' && tab !== 'customers') {
+        /**
+         * 搜索态：直接展示命中结果，不分页签/分组——找东西时不该被层级打断。
+         *
+         * 看板与客户台账页**不参与搜索**：这两页的搜索框已经隐藏，
+         * 但如果用户在记录页搜过东西再切过来，`search` 状态还留着，
+         * 不加这个判断的话看板会被搜索结果顶掉——页面看起来像坏了。
+         */
         const hits = searchResult && searchResult.keyword === search.trim() && searchResult.scope === effectiveScope ? searchResult.items : null;
         if (!hits) {
           listContent = h(Skeleton, null);
@@ -4479,7 +4509,20 @@ window.__ModuleLoader__.load({
       const main = h(
         'main',
         { className: 'sct-main', ref: mainRef },
-        h('div', { className: 'sct-main-head' }, tabs, h('div', { className: 'sct-list-controls' }, filter, toolbar)),
+        /**
+         * 顶栏：页签 + 控制区。
+         *
+         * 控制区（域筛选 + 搜索 + 排序）**只对记录列表页有意义**。
+         * 看板是汇总视图，不按域筛、不搜记录；客户台账按客户聚合，也不按域筛。
+         * 在这两页上摆一排"只看某域"的按钮，会让人以为看板可以按域过滤——
+         * 而它其实不看 scope。两套筛选同时在屏幕上就是误导。
+         */
+        h(
+          'div',
+          { className: 'sct-main-head' },
+          tabs,
+          showScopeFilter ? h('div', { className: 'sct-list-controls' }, filter, toolbar) : null,
+        ),
         h(
           'div',
           {
