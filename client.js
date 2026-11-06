@@ -199,9 +199,46 @@ window.__ModuleLoader__.load({
   --zw-data-w:calc(var(--zw-shell-max) - var(--zw-shell-pad) * 2 - var(--zw-aside-w) - var(--zw-layout-gap));
 }
 .sct-shell{max-width:var(--zw-shell-max);margin:0 auto;padding:0 var(--zw-shell-pad);width:100%;flex:1;min-height:0;display:flex;flex-direction:column;min-width:0}
-/* ── 数据看板页 ── */
-.sct-board-page{display:flex;flex-direction:column;gap:22px;padding-top:4px}
-.sct-boardbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+/*
+ * 看板页：**固定一屏，不滚动**。
+ *
+ * ── 为什么必须改布局而不是缩字号 ──
+ * 实测竖排一层：顶部切换条 32 + 四个数字 89 + 四个区块 686 = 921px。
+ * 笔记本视口扣掉面板顶栏后约 470px，差得太远。
+ *
+ * ── 三列，按"内容需要多宽"分配 ──
+ *   左   各项工作表        窄：领域名 + 四个数字列
+ *   中   回款 + 风险       窄：两列小表 / 一行一条
+ *   右   漏斗 + 趋势       宽：漏斗要横排四段，趋势要放 12 根柱子
+ *
+ * 漏斗**必须放宽列**：它天然是横向的"商机 → 项目销售 → 合同 → 实施"，
+ * 挤进窄列会变成竖排一堆方块，看上面的箭头就完全断掉了。
+ * 这是实测两列方案时踩到的——右列一窄，漏斗立刻塌成竖列。
+ *
+ * ── 为什么用 minmax(0,1fr) 而不是 1fr ──
+ * grid 的 1fr 默认不收缩到内容以下，长文本会把列撑宽、
+ * 进而把整个网格挤出容器。minmax(0,1fr) 才允许真正压缩。
+ */
+.sct-board-page{
+  display:grid;
+  grid-template-columns:minmax(220px,260px) minmax(240px,300px) minmax(0,1fr);
+  grid-template-rows:auto auto minmax(0,1fr);
+  grid-template-areas:
+    "bar   bar  bar"
+    "kpis  kpis kpis"
+    "left  mid  right";
+  gap:12px 18px;
+  align-content:start;
+  height:100%;
+  min-height:0;
+  overflow:hidden;
+  padding-top:2px;
+}
+.sct-boardbar{grid-area:bar;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.sct-board-kpis{grid-area:kpis}
+.sct-board-col-left{grid-area:left;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
+.sct-board-col-mid{grid-area:mid;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
+.sct-board-col-right{grid-area:right;display:flex;flex-direction:column;gap:12px;min-height:0;overflow:hidden}
 .sct-boardbar-tabs{display:inline-flex;border:1px solid var(--zw-line);border-radius:8px;overflow:hidden}
 .sct-winbtn{border:0;background:transparent;color:var(--zw-muted);font-size:12.5px;padding:7px 14px;cursor:pointer;font-family:inherit}
 .sct-winbtn:hover{background:var(--zw-hover)}
@@ -219,38 +256,54 @@ window.__ModuleLoader__.load({
 .sct-kpi strong{font-size:22px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1.1}
 .sct-kpi-note{font-size:10.5px;color:var(--zw-muted);opacity:.8}
 
-.sct-block{display:flex;flex-direction:column;gap:10px}
-.sct-block-title{font-size:12px;font-weight:600;color:var(--zw-muted);letter-spacing:.3px;margin:0}
-.sct-block-title:not(:first-child){margin-top:14px}
+.sct-block{display:flex;flex-direction:column;gap:8px;min-height:0;flex:none}
+/*
+ * 右列最后一块（趋势）不再吃剩余高度——趋势有自己的上限。
+ * 左列的表格块可能比右列高（域多的时候），溢出时**内部滚动**，
+ * 而不是把整页撑出屏幕。
+ */
+.sct-board-col-left>.sct-block:last-child{overflow:hidden}
+.sct-block-title{font-size:12px;font-weight:600;color:var(--zw-muted);letter-spacing:.3px;margin:0;flex:none}
 
 /*
  * 各领域汇总表：领域名放得宽，数字列固定窄。
  *
  * 四列都用 1fr 会让数字飘到格子中间，眼睛要横跨大半屏才能把
- * "项目销售"和它的"2"对上。数字列固定 76px 更紧凑。
+ * "项目销售"和它的"2"对上。数字列固定宽度更紧凑。
+ *
+ * 左列最窄 300px 时：领域名 120 + 四个数字列 4×44 = 296，刚好放得下。
+ * 用 44 而不是 76，是因为两列布局后表格只有约 340px 宽——
+ * 76 会把第五列（逾期）直接挤出容器，**而且不报错**，那一列就那么消失了。
  */
 .sct-btable{border:1px solid var(--zw-line);border-radius:9px;overflow:hidden}
-.sct-btable-row{display:grid;grid-template-columns:minmax(120px,1fr) repeat(4,76px);gap:0;align-items:center}
-.sct-btable-row>span{padding:9px 12px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center}
-.sct-btable-row>span:first-child{text-align:left;padding-left:16px}
-.sct-btable-row>span:not(:first-child){text-align:right;padding-right:16px}
+.sct-btable-row{display:grid;grid-template-columns:minmax(88px,1fr) repeat(4,44px);gap:0;align-items:center}
+.sct-btable-row>span{padding:7px 6px;font-size:12.5px;font-variant-numeric:tabular-nums;text-align:center}
+.sct-btable-row>span:first-child{text-align:left;padding-left:12px}
+.sct-btable-row>span:not(:first-child){text-align:right;padding-right:10px}
 .sct-btable-row+.sct-btable-row{border-top:1px solid var(--zw-line)}
 .sct-btable-head{background:var(--zw-raised)}
-.sct-btable-head>span{font-size:11.5px;color:var(--zw-muted);font-weight:500}
+.sct-btable-head>span{font-size:11px;color:var(--zw-muted);font-weight:500}
 .sct-btable-name{font-weight:500}
 .sct-btable-pos{color:var(--zw-warning)}
 .sct-btable-ok{color:var(--zw-success, #3fb950)}
 .sct-btable-bad{color:var(--zw-danger)}
 
-/* 漏斗：一段一段横向排，用箭头连起来 */
-.sct-funnel{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
-.sct-funnel-seg{display:flex;flex-direction:column;gap:2px;padding:11px 15px;border:1px solid var(--zw-line);border-radius:9px;min-width:120px;position:relative}
-.sct-funnel-seg+.sct-funnel-seg{margin-left:26px}
-.sct-funnel-label{font-size:11.5px;color:var(--zw-muted)}
-.sct-funnel-seg strong{font-size:19px;font-weight:600;font-variant-numeric:tabular-nums}
-.sct-funnel-amount{font-size:11.5px;color:var(--zw-muted)}
-.sct-funnel-stuck{font-size:10.5px;color:var(--zw-warning);margin-top:2px}
-.sct-funnel-arrow{position:absolute;right:-21px;top:50%;transform:translateY(-50%);color:var(--zw-muted);font-size:14px}
+/*
+ * 漏斗：一段一段横向排，用箭头连起来。
+ *
+ * 紧凑化（为了"一屏放下"）：
+ *   内边距 11/15 → 8/11，最小宽度 120 → 92，字号 19 → 16。
+ * 四个框加起来原来要 4×120 + 3×26 = 558px，右列宽度足够，
+ * 真正吃高度的是内边距——压掉 6px/框就省 12px。
+ */
+.sct-funnel{display:flex;align-items:stretch;gap:0;flex-wrap:nowrap;min-width:0}
+.sct-funnel-seg{display:flex;flex-direction:column;gap:1px;padding:8px 11px;border:1px solid var(--zw-line);border-radius:8px;min-width:92px;flex:1;position:relative}
+.sct-funnel-seg+.sct-funnel-seg{margin-left:22px}
+.sct-funnel-label{font-size:11px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sct-funnel-seg strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2}
+.sct-funnel-amount{font-size:11px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sct-funnel-stuck{font-size:10px;color:var(--zw-warning);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sct-funnel-arrow{position:absolute;right:-18px;top:50%;transform:translateY(-50%);color:var(--zw-muted);font-size:13px}
 
 /* 回款：两列小表 */
 .sct-pay{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--zw-line);border:1px solid var(--zw-line);border-radius:9px;overflow:hidden}
@@ -259,9 +312,18 @@ window.__ModuleLoader__.load({
 .sct-pay-row strong{font-variant-numeric:tabular-nums}
 .sct-pay-sep{display:none}
 
-/* 趋势：12 根柱子 */
-.sct-trend{display:flex;align-items:flex-end;gap:6px;height:110px;padding:8px 0 0}
-.sct-trend-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:5px;min-width:0;height:100%;position:relative}
+/*
+ * 趋势：12 根柱子。
+ *
+ * ── 高度按可用空间收缩 ──
+ * 固定 200px 在矮屏（笔记本 568px 可用高）会撑爆右列；
+ * 固定 110px 在宽屏又显得像没有数据。
+ *
+ * 用 clamp(70px, 18vh, 190px)：矮屏给 70px 保底，高屏最多 190px。
+ * vh 比 px 更贴合"一屏放下"这个目标——它跟着窗口走。
+ */
+.sct-trend{display:flex;align-items:flex-end;gap:4px;height:clamp(70px,18vh,190px);padding:4px 0 0;flex:none}
+.sct-trend-col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;min-width:0;height:100%;position:relative}
 .sct-trend-col.is-in-window{background:linear-gradient(to top,rgba(121,192,255,.07),transparent);border-radius:5px}
 .sct-trend-bars{display:flex;align-items:flex-end;justify-content:center;gap:3px;flex:1;width:100%}
 .sct-trend-bar{width:7px;border-radius:2px 2px 0 0;min-height:2px}
@@ -4337,38 +4399,56 @@ window.__ModuleLoader__.load({
           windowBar,
           totalsRow,
 
+          /* 左列：各项工作表（窄，只有四个数字列） */
           h(
-            'section',
-            { className: 'sct-block' },
-            h('h3', { className: 'sct-block-title' }, t('board.blockDomains')),
-            domainTable,
+            'div',
+            { className: 'sct-board-col-left' },
+            h(
+              'section',
+              { className: 'sct-block' },
+              h('h3', { className: 'sct-block-title' }, t('board.blockDomains')),
+              domainTable,
+            ),
           ),
 
+          /* 中列：回款 + 风险（都是窄内容） */
           h(
-            'section',
-            { className: 'sct-block' },
-            h('h3', { className: 'sct-block-title' }, t('board.blockFunnel')),
-            funnelRow,
-            h('h3', { className: 'sct-block-title' }, t('board.blockPay')),
-            payBlock,
+            'div',
+            { className: 'sct-board-col-mid' },
+            h(
+              'section',
+              { className: 'sct-block' },
+              h('h3', { className: 'sct-block-title' }, t('board.blockPay')),
+              payBlock,
+            ),
+            board.risks.length
+              ? h(
+                  'section',
+                  { className: 'sct-block' },
+                  h('h3', { className: 'sct-block-title' }, t('board.blockRisks')),
+                  riskBlock,
+                )
+              : null,
           ),
 
+          /* 右列：漏斗（要横排四段）+ 趋势（要放 12 根柱子） */
           h(
-            'section',
-            { className: 'sct-block' },
-            h('h3', { className: 'sct-block-title' }, t('board.blockTrend')),
-            trendBlock,
-            legend,
+            'div',
+            { className: 'sct-board-col-right' },
+            h(
+              'section',
+              { className: 'sct-block' },
+              h('h3', { className: 'sct-block-title' }, t('board.blockFunnel')),
+              funnelRow,
+            ),
+            h(
+              'section',
+              { className: 'sct-block' },
+              h('h3', { className: 'sct-block-title' }, t('board.blockTrend')),
+              trendBlock,
+              legend,
+            ),
           ),
-
-          board.risks.length
-            ? h(
-                'section',
-                { className: 'sct-block' },
-                h('h3', { className: 'sct-block-title' }, t('board.blockRisks')),
-                riskBlock,
-              )
-            : null,
         );
       }
 
