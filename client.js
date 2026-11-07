@@ -1007,6 +1007,28 @@ window.__ModuleLoader__.load({
 .sct-insight-pager{display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:11px;color:var(--zw-muted)}
 .sct-insight-pager button{min-height:26px;padding:3px 7px;border:1px solid var(--zw-line);background:transparent;color:var(--zw-text);border-radius:4px;font:inherit;cursor:pointer}
 .sct-insight-pager button:disabled{opacity:.45;cursor:default}
+.sct-category-chart{display:flex;flex-direction:column;flex:1;min-height:0;gap:6px}
+.sct-category-plot{position:relative;flex:1;min-height:0;margin:24px 4px 0 48px}
+.sct-category-grid{position:absolute;inset:0;pointer-events:none}
+.sct-category-tick{position:absolute;left:0;right:0;border-bottom:1px solid var(--zw-line)}
+.sct-category-tick>span{position:absolute;right:calc(100% + 9px);top:0;transform:translateY(-50%);font-size:11px;line-height:14px;color:var(--zw-muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.sct-category-columns{position:absolute;inset:0;display:flex;gap:12px}
+.sct-category-column{position:relative;flex:1;min-width:0;border-radius:3px;outline-offset:3px}
+.sct-category-column:hover{background:var(--zw-hover)}
+.sct-category-bar{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:min(55%,64px);border-radius:4px 4px 0 0}
+.sct-category-value{position:absolute;left:0;right:0;text-align:center;font-size:12px;line-height:18px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.sct-category-labels{display:flex;gap:12px;margin:0 4px 0 48px;flex:none}
+.sct-category-labels>span{flex:1;min-width:0;text-align:center;font-size:11px;line-height:16px;overflow-wrap:anywhere;min-height:32px}
+.sct-category-zero{position:absolute;inset:0 0 25px;display:flex;justify-content:center;align-items:center;font-size:12px;color:var(--zw-muted);pointer-events:none}
+@container sct (max-width:700px){
+ .sct-category-plot{margin-left:36px;margin-top:22px}
+ .sct-category-labels{margin-left:36px;gap:6px}
+ .sct-category-columns{gap:6px}
+ .sct-category-labels>span{font-size:10px;line-height:13px;min-height:39px}
+ .sct-category-tick>span{font-size:10px;right:calc(100% + 5px)}
+ .sct-category-value{font-size:11px;line-height:16px}
+ .sct-category-chart{gap:4px}
+}
 .sct-insight-trend{display:flex;flex-direction:column;flex:1;min-height:0;gap:12px}
 .sct-insight-series{display:flex;flex-wrap:wrap;gap:6px 16px;flex:none;color:var(--zw-muted);font-size:11px}
 .sct-insight-series>span{display:flex;align-items:center;gap:5px}
@@ -4456,6 +4478,35 @@ window.__ModuleLoader__.load({
               h('button', { type: 'button', disabled: page === 0, 'aria-label': `${chart.title}上一组`, onClick: () => setBoardPages(p => ({ ...p, [pageKey]: page - 1 })) }, '上一组'),
               h('button', { type: 'button', disabled: page === pages - 1, 'aria-label': `${chart.title}下一组`, onClick: () => setBoardPages(p => ({ ...p, [pageKey]: page + 1 })) }, '下一组')) : null);
         };
+        const renderCategoryChart = (chart) => {
+          const size = boardSize.width < 700 ? 3 : Math.max(1, chart.rows.length);
+          const pages = Math.max(1, Math.ceil(chart.rows.length / size));
+          const pageKey = view.id + ':' + chart.id;
+          const page = Math.min(boardPages[pageKey] || 0, pages - 1);
+          const rows = chart.rows.slice(page * size, (page + 1) * size);
+          // One scale for every page; integer axes for counts, readable rounded axes for amounts.
+          const max = Math.max(0, ...chart.rows.map(row => row.value));
+          const magnitude = Math.pow(10, Math.floor(Math.log10(Math.max(1, max / 4))));
+          const step = Math.max(1, Math.ceil(max / 4 / magnitude) * magnitude);
+          const ceiling = max ? Math.ceil(max / step) * step : 1;
+          const tickCount = Math.max(1, Math.round(ceiling / step));
+          return h('div', { className: 'sct-category-chart' },
+            h('div', { className: 'sct-category-plot' },
+              h('div', { className: 'sct-category-grid', 'aria-hidden': 'true' }, Array.from({ length: tickCount + 1 }, (_, i) =>
+                h('div', { key: i, className: 'sct-category-tick', style: { bottom: `${i / tickCount * 100}%` } }, h('span', null, format(ceiling * i / tickCount, chart.unit))))),
+              max === 0 ? h('span', { className: 'sct-category-zero' }, '各分类当前均为 0') : null,
+              h('div', { className: 'sct-category-columns' }, rows.map(row => {
+                const height = Math.max(0, row.value) / ceiling * 100;
+                return h('div', { key: row.label, className: 'sct-category-column', tabIndex: 0, title: `${row.label}：${exact(row.value, chart.unit)}`, 'aria-label': `${row.label}：${exact(row.value, chart.unit)}` },
+                  h('span', { className: 'sct-category-bar', style: { height: `${height}%`, background: tone(row.tone) }, 'aria-hidden': 'true' }),
+                  h('strong', { className: 'sct-category-value', style: { bottom: `calc(${height}% + 4px)` } }, format(row.value, chart.unit)));
+              }))),
+            h('div', { className: 'sct-category-labels', 'aria-hidden': 'true' }, rows.map(row => h('span', { key: row.label }, row.label))),
+            pages > 1 ? h('div', { className: 'sct-insight-pager', 'aria-label': `${chart.title}分页` },
+              h('span', null, `${page + 1} / ${pages}`),
+              h('button', { type: 'button', disabled: page === 0, 'aria-label': `${chart.title}上一组`, onClick: () => setBoardPages(p => ({ ...p, [pageKey]: page - 1 })) }, '上一组'),
+              h('button', { type: 'button', disabled: page === pages - 1, 'aria-label': `${chart.title}下一组`, onClick: () => setBoardPages(p => ({ ...p, [pageKey]: page + 1 })) }, '下一组')) : null);
+        };
         const renderTrend = (chart) => {
           if (boardSize.width < 700 && chart.buckets.length > 6) {
             const step = Math.ceil(chart.buckets.length / 6);
@@ -4507,9 +4558,9 @@ window.__ModuleLoader__.load({
           h('tbody', null, chart.rows.map(row => h('tr', { key: row.label },
             h('th', { scope: 'row' }, row.label), h('td', null, row.count),
             h('td', { title: exact(row.amount, '元') }, format(row.amount, '元'), row.missing ? h('small', null, `${row.missing} 项金额待补`) : null)))));
-        const panel = chart => h('section', { key: chart.id, className: 'sct-panel sct-insight-panel', hidden: !boardOverview && chart.id !== selectedChart, 'aria-label': chart.title },
+        const panel = (chart, index) => h('section', { key: chart.id, className: 'sct-panel sct-insight-panel', hidden: !boardOverview && chart.id !== selectedChart, 'aria-label': chart.title },
           h('header', { className: 'sct-panel-head' }, h('h3', null, chart.title), chart.unit ? h('span', { className: 'sct-panel-extra' }, chart.unit === '元' ? '金额 / 元' : `单位 / ${chart.unit}`) : null),
-          h('div', { className: 'sct-panel-body' }, chart.kind === 'trend' ? renderTrend(chart) : chart.kind === 'distribution' ? renderDistribution(chart) : chart.kind === 'outcomes' ? renderOutcomes(chart) : renderBars(chart)),
+          h('div', { className: 'sct-panel-body' }, index >= 3 && chart.kind === 'bars' ? renderCategoryChart(chart) : chart.kind === 'trend' ? renderTrend(chart) : chart.kind === 'distribution' ? renderDistribution(chart) : chart.kind === 'outcomes' ? renderOutcomes(chart) : renderBars(chart)),
           h('p', { className: 'sct-insight-note', title: chart.note }, chart.note));
 
         return h('div', { className: 'sct-board-page sct-insights', 'data-overview': boardOverview, 'aria-busy': boardLoading },
