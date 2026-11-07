@@ -925,14 +925,14 @@ window.__ModuleLoader__.load({
  }
 }
 
-/* The dashboard owns the available viewport, rather than nesting in the record scroller. */
-.sct-root[data-view="board"] .sct-scroll{overflow:hidden;scrollbar-gutter:auto}
-.sct-root[data-view="board"] .sct-shell{flex:1;min-height:0;padding:16px 24px 20px}
-.sct-root[data-view="board"] .sct-layout{display:flex;flex:1;min-height:0;align-items:stretch}
-.sct-root[data-view="board"] .sct-main{flex:1;min-height:0;overflow:hidden;padding:0 20px 16px}
-.sct-root[data-view="board"] .sct-board-host{display:flex;flex:1;min-height:0;overflow:hidden;padding:0;scrollbar-gutter:auto}
-.sct-root[data-view="board"] .sct-tabs{margin-bottom:12px;overflow:hidden;flex-wrap:wrap;gap:16px}
-.sct-root[data-view="board"] .sct-tab{height:40px}
+/* The dashboard and record tabs share the full available workspace. */
+.sct-root[data-workspace="true"] .sct-scroll{overflow:hidden;scrollbar-gutter:auto}
+.sct-root[data-workspace="true"] .sct-shell{flex:1;min-height:0;padding:16px 24px 20px}
+.sct-root[data-workspace="true"] .sct-layout{display:flex;flex:1;min-height:0;align-items:stretch}
+.sct-root[data-workspace="true"] .sct-main{flex:1;min-height:0;overflow:hidden;padding:0 20px 16px}
+.sct-root[data-workspace="true"] .sct-board-host{display:flex;flex:1;min-height:0;overflow:hidden;padding:0;scrollbar-gutter:auto}
+.sct-root[data-workspace="true"] .sct-tabs{margin-bottom:12px;overflow:hidden;flex-wrap:wrap;gap:16px}
+.sct-root[data-workspace="true"] .sct-tab{height:40px}
 .sct-root .sct-board-page{width:100%;height:auto;flex:1;min-height:0;gap:12px;overflow:hidden}
 .sct-root .sct-board-grid{grid-template-rows:repeat(2,minmax(0,1fr));gap:14px}
 .sct-root .sct-board-page[data-overview="false"] .sct-board-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
@@ -957,12 +957,12 @@ window.__ModuleLoader__.load({
 .sct-board-navigation{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
 .sct-board-navigation select{max-width:100%;min-width:0;font-size:13px}
 @container sct (max-width:700px){
- .sct-root[data-view="board"] .sct-shell{padding:8px}
- .sct-root[data-view="board"] .sct-main{padding:0 10px 10px}
- .sct-root[data-view="board"] .sct-topbar{padding:8px 12px;min-height:0}
- .sct-root[data-view="board"] .sct-brand p,.sct-root[data-view="board"] .sct-community{display:none}
- .sct-root[data-view="board"] .sct-tabs{gap:12px;margin-bottom:8px}
- .sct-root[data-view="board"] .sct-tab{font-size:12px;height:32px}
+ .sct-root[data-workspace="true"] .sct-shell{padding:8px}
+ .sct-root[data-workspace="true"] .sct-main{padding:0 10px 10px}
+ .sct-root[data-workspace="true"] .sct-topbar{padding:8px 12px;min-height:0}
+ .sct-root[data-workspace="true"] .sct-brand p,.sct-root[data-workspace="true"] .sct-community{display:none}
+ .sct-root[data-workspace="true"] .sct-tabs{gap:12px;margin-bottom:8px}
+ .sct-root[data-workspace="true"] .sct-tab{font-size:12px;height:32px}
  .sct-root .sct-board-page{gap:8px}
  .sct-root .sct-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
  .sct-root .sct-stat{padding:6px 8px}
@@ -1056,19 +1056,19 @@ window.__ModuleLoader__.load({
 @container sct (max-width:1100px){
  .sct-insight-description{display:none}
 }
-.sct-root[data-view="board"][data-board-short="true"] .sct-shell{padding:8px 12px}
+.sct-root[data-workspace="true"][data-board-short="true"] .sct-shell{padding:8px 12px}
 @container sct (min-width:701px){
  .sct-root[data-board-short="true"] .sct-insights .sct-stat{padding:6px 12px}
  .sct-root[data-board-short="true"] .sct-insights .sct-stat-val{font-size:22px}
 }
 @container sct (max-width:700px){
- .sct-root[data-view="board"] .sct-brand{display:none}
- .sct-root[data-view="board"] .sct-topbar{padding:6px 10px}
+ .sct-root[data-workspace="true"] .sct-brand{display:none}
+ .sct-root[data-workspace="true"] .sct-topbar{padding:6px 10px}
  .sct-insight-toolbar{gap:6px}
  .sct-insight-toolbar .sct-boardbar{width:100%}
  .sct-insight-views{width:100%;gap:2px}
  .sct-insight-views button{flex:1;font-size:12px;padding:6px 4px}
- .sct-root[data-view="board"][data-board-short="true"] .sct-shell{padding:8px}
+ .sct-root[data-workspace="true"][data-board-short="true"] .sct-shell{padding:8px}
  .sct-root .sct-insights .sct-stat{padding:6px}
  .sct-root .sct-insights .sct-stat-val{font-size:18px;line-height:1.2}
  .sct-insights .sct-stat-val small{font-size:10px;margin-left:2px}
@@ -1083,6 +1083,32 @@ window.__ModuleLoader__.load({
  .sct-insight-legend>div{gap:5px}
 }
 
+
+/* Record tabs use the same full-size frame as the dashboard. */
+.sct-root[data-records="true"] .sct-scroll{position:relative}
+.sct-root[data-records="true"] .sct-main-head{max-height:72%;overflow:auto;scrollbar-width:thin}
+.sct-root[data-records="true"] .sct-list-scroll{flex:1;min-height:0;overflow:auto;padding-bottom:0;scrollbar-gutter:auto}
+.sct-workspace-nav{display:flex;align-items:center;gap:20px;border-bottom:1px solid var(--zw-line);margin-bottom:12px;flex:none}
+.sct-root[data-records="true"] .sct-workspace-nav .sct-tabs{flex:1;min-width:0;margin:0;border:0;padding:0}
+.sct-workspace-actions{display:flex;align-items:center;gap:6px;flex:none}
+.sct-root .sct-workspace-actions button{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:4px 10px;font-size:12px;background:transparent;border-color:transparent;color:var(--zw-muted)}
+.sct-root .sct-workspace-actions button[aria-expanded="true"]{background:var(--zw-accent-soft);color:var(--zw-accent-on-soft)}
+.sct-record-capture[hidden]{display:none}
+.sct-root .sct-record-capture .sct-capture{margin:0 0 12px;padding:8px}
+.sct-agenda-panel{position:absolute;z-index:10;top:64px;right:24px;bottom:20px;width:min(480px,calc(100% - 48px));display:flex;flex-direction:column;border:1px solid var(--zw-line-strong);border-radius:12px;background:var(--zw-surface);overflow:hidden}
+.sct-agenda-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--zw-line);flex:none}
+.sct-agenda-panel-head h2{margin:0;font-size:15px}
+.sct-root .sct-agenda-panel .sct-aside{display:flex;flex-direction:column;flex:1;min-height:0;overflow:auto;padding:16px 18px;gap:18px;width:auto;scrollbar-gutter:auto}
+.sct-root .sct-agenda-panel .sct-side-block{margin:0;width:100%;max-height:none;overflow:visible}
+@container sct (max-width:700px){
+ .sct-workspace-nav{flex-wrap:wrap;gap:2px;margin-bottom:8px;padding-bottom:6px}
+ .sct-root[data-records="true"] .sct-workspace-nav .sct-tabs{flex-basis:100%}
+ .sct-workspace-actions{width:100%;justify-content:flex-end}
+ .sct-root .sct-workspace-actions button{font-size:11px;padding:3px 8px}
+ .sct-agenda-panel{top:90px;right:8px;bottom:8px;width:calc(100% - 16px)}
+ .sct-root .sct-agenda-panel .sct-aside{padding:12px}
+}
+
 `;
 
     const MESSAGES = {
@@ -1091,6 +1117,8 @@ window.__ModuleLoader__.load({
         'brand.sub': '记录细微，回看进展',
         'sidebar.label': '知微观澜',
         'action.refresh': '刷新',
+        'workspace.quick': '快速记录',
+        'workspace.agenda': '日程与提醒',
         'action.settings': '提醒设置',
         'action.close': '关闭',
         'action.cancel': '取消',
@@ -1334,6 +1362,8 @@ window.__ModuleLoader__.load({
         'brand.sub': 'Notice the subtle, review the flow',
         'sidebar.label': 'Insight Desk',
         'action.refresh': 'Refresh',
+        'workspace.quick': 'Quick capture',
+        'workspace.agenda': 'Agenda & reminders',
         'action.settings': 'Reminders',
         'action.close': 'Close',
         'action.cancel': 'Cancel',
@@ -2724,6 +2754,29 @@ window.__ModuleLoader__.load({
       const tabState = useState('pending');
       const tab = tabState[0];
       const setTab = tabState[1];
+      const recordView = tab === 'pending' || tab === 'all';
+      const [captureOpen, setCaptureOpen] = useState(false);
+      const [agendaOpen, setAgendaOpen] = useState(false);
+      const captureRegionRef = useRef(null);
+      const agendaPanelRef = useRef(null);
+      const agendaToggleRef = useRef(null);
+      const captureToggleRef = useRef(null);
+      const closeAgenda = () => { setAgendaOpen(false); agendaToggleRef.current?.focus(); };
+      useEffect(() => {
+        if (captureOpen && recordView) captureRegionRef.current?.querySelector('input')?.focus();
+      }, [captureOpen, recordView]);
+      useEffect(() => { setAgendaOpen(false); }, [tab]);
+      useEffect(() => {
+        if (!agendaOpen) return;
+        agendaPanelRef.current?.querySelector('button')?.focus();
+        const key = e => { if (e.key === 'Escape') { e.preventDefault(); closeAgenda(); } };
+        const outside = e => {
+          if (!agendaPanelRef.current?.contains(e.target) && !agendaToggleRef.current?.contains(e.target)) setAgendaOpen(false);
+        };
+        document.addEventListener('keydown', key);
+        document.addEventListener('pointerdown', outside);
+        return () => { document.removeEventListener('keydown', key); document.removeEventListener('pointerdown', outside); };
+      }, [agendaOpen]);
       /**
        * 数据看板的时间窗口与数据。
        *
@@ -4708,7 +4761,12 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'sct-main-head' },
-          tabs,
+          recordView ? h('div', { className: 'sct-workspace-nav' }, tabs,
+            h('div', { className: 'sct-workspace-actions' },
+              h('button', { ref: captureToggleRef, type: 'button', 'aria-expanded': captureOpen, 'aria-controls': 'sct-record-capture', onClick: () => setCaptureOpen(open => !open) }, t('workspace.quick')),
+              h('button', { ref: agendaToggleRef, type: 'button', 'aria-expanded': agendaOpen, 'aria-controls': 'sct-agenda-panel', onClick: () => setAgendaOpen(open => !open) }, h(ControlIcon, { name: 'calendar' }), t('workspace.agenda')))) : tabs,
+          recordView ? h('div', { id: 'sct-record-capture', className: 'sct-record-capture', ref: captureRegionRef, hidden: !captureOpen,
+            onKeyDown: e => { if (e.key === 'Escape') { setCaptureOpen(false); captureToggleRef.current?.focus(); } } }, capture) : null,
           showScopeFilter ? h('div', { className: 'sct-list-controls' }, filter, toolbar) : null,
         ),
         h(
@@ -4902,7 +4960,7 @@ window.__ModuleLoader__.load({
 
       return h(
         'div',
-        { className: 'sct-root', ref: boardFrame, 'data-view': tab, 'data-board-short': boardSize.height < 700, 'data-theme': appearance.resolved, 'data-theme-mode': appearance.theme },
+        { className: 'sct-root', ref: boardFrame, 'data-view': tab, 'data-workspace': recordView || tab === 'board', 'data-records': recordView, 'data-board-short': boardSize.height < 700, 'data-theme': appearance.resolved, 'data-theme-mode': appearance.theme },
         topbar,
         /**
          * 顺序必须是 **main 在前、aside 在后**。
@@ -4912,7 +4970,11 @@ window.__ModuleLoader__.load({
          * 辅助区会占据主列（实测表现为：左边一大块空白 + 内容挤到右侧一窄条），
          * 而且窄屏单栏时辅助区会跑到主区**上面**。
          */
-        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, tab === 'board' ? null : hero, tab === 'board' ? null : capture, h('div', { className: 'sct-layout' }, main, tab === 'board' ? null : aside))),
+        h('div', { className: 'sct-scroll' },
+          h('div', { className: 'sct-shell' }, tab === 'board' || recordView ? null : hero, tab === 'board' || recordView ? null : capture,
+            h('div', { className: 'sct-layout' }, main, tab === 'board' || recordView ? null : aside)),
+          recordView && agendaOpen ? h('section', { id: 'sct-agenda-panel', className: 'sct-agenda-panel', ref: agendaPanelRef, 'aria-label': t('workspace.agenda') },
+            h('header', { className: 'sct-agenda-panel-head' }, h('h2', null, t('workspace.agenda')), h('button', { type: 'button', onClick: closeAgenda }, t('action.close'))), aside) : null),
         drawers,
         toastNode,
       );
