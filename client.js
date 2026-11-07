@@ -354,19 +354,7 @@ window.__ModuleLoader__.load({
 /* 图例里的数量也是数据标签，用粗体让它比状态名更醒目 */
 .sct-legend-item b{margin-left:auto;font-weight:600;color:var(--zw-text);font-variant-numeric:tabular-nums}
 
-/* ── 窄屏：标签两列、图表单列、允许纵向滚动 ── */
-/*
- * 手机上五张图一屏塞不下，这时候"一屏不滚动"是伪需求——
- * 硬塞会把每张图压成一条线。窄屏放开滚动，让内容正常展开。
- */
-@media (max-width:900px){
-  .sct-board-page{height:auto;overflow:visible}
-  .sct-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .sct-board-grid{grid-template-columns:1fr;flex:none}
-  .sct-panel:nth-child(n){grid-column:span 1}
-  .sct-panel{min-height:170px}
-  .sct-chart-bar-tall{min-height:110px}
-}
+
 
 .sct-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;padding:36px 0 28px;flex:none}
 /* 数据看板：顶部常驻摘要条。数值用等宽数字，位数变化时不会左右跳 */
@@ -935,6 +923,158 @@ window.__ModuleLoader__.load({
   .sct-root .sct-aside .sct-reminder-card{border-bottom:0;padding-bottom:0}
   .sct-root .sct-aside .sct-side-block:last-child{grid-column:auto}
  }
+}
+
+/* The dashboard owns the available viewport, rather than nesting in the record scroller. */
+.sct-root[data-view="board"] .sct-scroll{overflow:hidden;scrollbar-gutter:auto}
+.sct-root[data-view="board"] .sct-shell{flex:1;min-height:0;padding:16px 24px 20px}
+.sct-root[data-view="board"] .sct-layout{display:flex;flex:1;min-height:0;align-items:stretch}
+.sct-root[data-view="board"] .sct-main{flex:1;min-height:0;overflow:hidden;padding:0 20px 16px}
+.sct-root[data-view="board"] .sct-board-host{display:flex;flex:1;min-height:0;overflow:hidden;padding:0;scrollbar-gutter:auto}
+.sct-root[data-view="board"] .sct-tabs{margin-bottom:12px;overflow:hidden;flex-wrap:wrap;gap:16px}
+.sct-root[data-view="board"] .sct-tab{height:40px}
+.sct-root .sct-board-page{width:100%;height:auto;flex:1;min-height:0;gap:12px;overflow:hidden}
+.sct-root .sct-board-grid{grid-template-rows:repeat(2,minmax(0,1fr));gap:14px}
+.sct-root .sct-board-page[data-overview="false"] .sct-board-grid{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+.sct-root .sct-board-page[data-overview="false"] .sct-panel{grid-column:1;min-height:0}
+.sct-root .sct-panel[hidden]{display:none}
+.sct-root .sct-panel{padding:16px 18px;border-radius:12px;background:var(--zw-surface)}
+.sct-root .sct-panel-head h3{font-size:14px}
+.sct-root .sct-panel-head{padding-bottom:14px}
+.sct-root .sct-stats{gap:0;border-block:1px solid var(--zw-line)}
+.sct-root .sct-stat{padding:12px 16px;background:transparent;border:0;border-right:1px solid var(--zw-line);border-radius:0}
+.sct-root .sct-stat:last-child{border-right:0}
+.sct-root .sct-stat.is-accent{background:var(--zw-accent-soft)}
+.sct-root .sct-stat-val{font-size:28px;line-height:1.3}
+.sct-root .sct-stat-key{font-size:12px}
+.sct-root .sct-donut svg{display:block;width:100%;height:100%;stroke:none;fill:none;stroke-linecap:butt}
+.sct-root .sct-donut-wrap{justify-content:center}
+.sct-root .sct-legend{max-width:360px}
+.sct-root .sct-chart-hbar{gap:10px}
+.sct-root .sct-hbar-row{grid-template-columns:80px minmax(0,1fr) 36px}
+.sct-root .sct-cbar-fill{width:min(70%,36px)}
+.sct-root .sct-cbar-value,.sct-root .sct-cbar-label{font-size:11px;height:15px;line-height:15px}
+.sct-board-navigation{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:none}
+.sct-board-navigation select{max-width:100%;min-width:0;font-size:13px}
+@container sct (max-width:700px){
+ .sct-root[data-view="board"] .sct-shell{padding:8px}
+ .sct-root[data-view="board"] .sct-main{padding:0 10px 10px}
+ .sct-root[data-view="board"] .sct-topbar{padding:8px 12px;min-height:0}
+ .sct-root[data-view="board"] .sct-brand p,.sct-root[data-view="board"] .sct-community{display:none}
+ .sct-root[data-view="board"] .sct-tabs{gap:12px;margin-bottom:8px}
+ .sct-root[data-view="board"] .sct-tab{font-size:12px;height:32px}
+ .sct-root .sct-board-page{gap:8px}
+ .sct-root .sct-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+ .sct-root .sct-stat{padding:6px 8px}
+ .sct-root .sct-stat-val{font-size:20px}
+ .sct-root .sct-stat-note{display:none}
+ .sct-root .sct-stat-key{font-size:11px}
+ .sct-root .sct-boardbar{gap:6px}
+ .sct-root .sct-boardbar-label{display:none}
+ .sct-root .sct-boardbar-dates{width:100%;gap:4px}
+ .sct-root .sct-boardbar-dates input{min-width:0;flex:1;width:0;padding:4px}
+ .sct-board-navigation{flex-wrap:wrap;gap:4px}
+ .sct-board-navigation>span{font-size:10px}
+ .sct-board-navigation select{width:100%;padding:5px 8px}
+ .sct-root .sct-panel{padding:10px}
+ .sct-root .sct-panel-head{padding-bottom:8px}
+ .sct-root .sct-panel-head h3{font-size:12px}
+ .sct-root .sct-chart-hbar{gap:6px}
+ .sct-root .sct-hbar-row{grid-template-columns:60px minmax(0,1fr) 26px;gap:6px}
+ .sct-root .sct-donut-wrap{gap:12px}
+ .sct-root .sct-legend{grid-template-columns:1fr}
+}
+
+/* Business views share the plugin palette and reserve space for every chart's explanation. */
+.sct-insight-toolbar{display:flex;align-items:center;justify-content:space-between;gap:8px 16px;flex:none;flex-wrap:wrap}
+.sct-insight-toolbar .sct-boardbar{margin-left:auto}
+.sct-insight-toolbar .sct-boardbar-label{display:none}
+.sct-insight-views{display:flex;gap:4px;flex:none}
+.sct-insight-views button{border:0;border-radius:6px;padding:7px 14px;font:inherit;font-size:14px;color:var(--zw-muted);background:transparent;cursor:pointer}
+.sct-insight-views button:hover{background:var(--zw-hover);color:var(--zw-text)}
+.sct-insight-views button[aria-pressed="true"]{background:var(--zw-accent-soft);color:var(--zw-accent-on-soft);font-weight:600}
+.sct-insight-description{font-size:12px;color:var(--zw-muted)}
+.sct-insights .sct-stat-val small{font-size:12px;font-weight:400;margin-left:4px;color:var(--zw-muted)}
+.sct-insights .sct-panel-head{padding-bottom:10px}
+.sct-insight-note{font-size:11px;color:var(--zw-muted);line-height:1.5;flex:none;margin:10px 0 0;max-width:none}
+.sct-insight-bars{display:flex;flex-direction:column;justify-content:center;gap:6px;flex:1;min-height:0}
+.sct-insight-bar-rows{display:flex;flex-direction:column;gap:6px}
+.sct-insight-bar-row{display:grid;grid-template-columns:128px minmax(0,1fr) 64px;align-items:center;gap:10px;font-size:12px;min-height:20px}
+.sct-insight-row-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sct-insight-bar-row strong{font-size:13px;font-weight:600;text-align:right;font-variant-numeric:tabular-nums}
+.sct-insight-track{background:var(--zw-raised);height:8px;min-width:0;border-radius:2px;overflow:hidden}
+.sct-insight-track>span{display:block;height:100%;border-radius:2px}
+.sct-insight-pager{display:flex;align-items:center;justify-content:flex-end;gap:8px;font-size:11px;color:var(--zw-muted)}
+.sct-insight-pager button{min-height:26px;padding:3px 7px;border:1px solid var(--zw-line);background:transparent;color:var(--zw-text);border-radius:4px;font:inherit;cursor:pointer}
+.sct-insight-pager button:disabled{opacity:.45;cursor:default}
+.sct-insight-trend{display:flex;flex-direction:column;flex:1;min-height:0;gap:12px}
+.sct-insight-series{display:flex;flex-wrap:wrap;gap:6px 16px;flex:none;color:var(--zw-muted);font-size:11px}
+.sct-insight-series>span{display:flex;align-items:center;gap:5px}
+.sct-insight-series strong{color:var(--zw-text);font-weight:600;font-variant-numeric:tabular-nums}
+.sct-insight-series i,.sct-insight-legend i{width:7px;height:7px;border-radius:2px;display:block;flex:none}
+.sct-insight-plot{position:relative;display:flex;align-items:stretch;gap:8px;min-height:0;flex:1}
+.sct-insight-bucket{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;outline-offset:1px;border-radius:3px}
+.sct-insight-bucket:hover{background:var(--zw-hover)}
+.sct-insight-columns{flex:1;min-height:0;display:flex;gap:3px;justify-content:center}
+.sct-insight-column{display:flex;flex-direction:column;min-width:0;flex:1;max-width:32px;gap:3px}
+.sct-insight-column-track{flex:1;min-height:0;display:flex;align-items:flex-end}
+.sct-insight-column-track>span{display:block;width:100%;border-radius:3px 3px 0 0}
+.sct-insight-point-value{font-size:11px;line-height:14px;height:14px;flex:none;text-align:center;font-variant-numeric:tabular-nums}
+.sct-insight-bucket-label{height:16px;line-height:16px;font-size:10px;text-align:center;white-space:nowrap;color:var(--zw-muted)}
+.sct-insight-point-detail{display:none;position:absolute;z-index:1;bottom:24px;left:0;right:0;padding:8px 10px;border:1px solid var(--zw-line-strong);border-radius:6px;background:var(--zw-surface);color:var(--zw-text);font-size:11px;line-height:1.5;pointer-events:none}
+.sct-insight-bucket:hover .sct-insight-point-detail,.sct-insight-bucket:focus-visible .sct-insight-point-detail{display:block}
+.sct-insight-zero{position:absolute;inset:0 0 22px;display:flex;align-items:center;justify-content:center;color:var(--zw-muted);font-size:12px;pointer-events:none}
+.sct-insight-distribution{display:flex;align-items:center;justify-content:center;gap:24px;flex:1;min-height:0}
+.sct-insight-ring{position:relative;width:112px;height:112px;flex:none}
+.sct-root .sct-insight-ring svg{display:block;width:100%;height:100%;fill:none;stroke:none;stroke-linecap:butt}
+.sct-insight-ring>div{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.sct-insight-ring strong{font-size:24px;line-height:1.2;font-weight:600}
+.sct-insight-ring span{font-size:10px;color:var(--zw-muted)}
+.sct-insight-legend{display:flex;flex-direction:column;gap:8px;min-width:0;max-width:280px;flex:1;font-size:12px}
+.sct-insight-distribution[data-dense="true"] .sct-insight-legend{gap:4px;font-size:11px}
+.sct-insight-legend>div{display:flex;align-items:center;gap:8px}
+.sct-insight-legend strong{margin-left:auto;font-weight:600}
+.sct-insight-legend small{width:35px;text-align:right;color:var(--zw-muted);font-variant-numeric:tabular-nums}
+.sct-root .sct-insight-table{width:100%;border-collapse:collapse;font-size:13px}
+.sct-insight-table th,.sct-insight-table td{padding:6px 0;border-bottom:1px solid var(--zw-line);text-align:right;font-variant-numeric:tabular-nums}
+.sct-insight-table th:first-child{text-align:left}
+.sct-insight-table thead th{font-size:11px;font-weight:400;color:var(--zw-muted)}
+.sct-insight-table tbody th{font-weight:500}
+.sct-insight-table tr:last-child th,.sct-insight-table tr:last-child td{border-bottom:0}
+.sct-insight-table small{display:block;font-size:10px;color:var(--zw-warning)}
+@container sct (max-width:1100px){
+ .sct-insight-description{display:none}
+}
+.sct-root[data-view="board"][data-board-short="true"] .sct-shell{padding:8px 12px}
+@container sct (min-width:701px){
+ .sct-root[data-board-short="true"] .sct-insights .sct-stat{padding:6px 12px}
+ .sct-root[data-board-short="true"] .sct-insights .sct-stat-val{font-size:22px}
+}
+@container sct (max-width:700px){
+ .sct-root[data-view="board"] .sct-brand{display:none}
+ .sct-root[data-view="board"] .sct-topbar{padding:6px 10px}
+ .sct-insight-toolbar{gap:6px}
+ .sct-insight-toolbar .sct-boardbar{width:100%}
+ .sct-insight-views{width:100%;gap:2px}
+ .sct-insight-views button{flex:1;font-size:12px;padding:6px 4px}
+ .sct-root[data-view="board"][data-board-short="true"] .sct-shell{padding:8px}
+ .sct-root .sct-insights .sct-stat{padding:6px}
+ .sct-root .sct-insights .sct-stat-val{font-size:18px;line-height:1.2}
+ .sct-insights .sct-stat-val small{font-size:10px;margin-left:2px}
+ .sct-insight-note{font-size:10px;margin-top:6px;line-height:1.4}
+ .sct-insight-bar-rows{gap:6px}
+ .sct-insight-bar-row{grid-template-columns:112px minmax(0,1fr) 50px;gap:5px;font-size:11px;min-height:18px}
+ .sct-insight-bar-row strong{font-size:12px}
+ .sct-insight-bars{gap:6px}
+ .sct-insight-trend{gap:6px}
+ .sct-insight-series{gap:3px 8px;font-size:10px}
+ .sct-insight-plot{gap:3px}
+ .sct-insight-bucket-label{font-size:9px}
+ .sct-insight-distribution{gap:12px}
+ .sct-insight-ring{width:90px;height:90px}
+ .sct-insight-legend{font-size:11px;gap:6px}
+ .sct-insight-legend>div{gap:5px}
+ .sct-insight-table th,.sct-insight-table td{padding:5px 0;font-size:12px}
 }
 
 `;
@@ -2552,6 +2692,23 @@ window.__ModuleLoader__.load({
 
     function Panel() {
       const appearance = useTheme();
+      const boardFrame = useRef(null);
+      const [boardSize, setBoardSize] = useState({ width: 1200, height: 800 });
+      const [boardChart, setBoardChart] = useState('');
+      const [boardView, setBoardView] = useState('overview');
+      const [boardPages, setBoardPages] = useState({});
+      const [boardRevision, setBoardRevision] = useState(0);
+      const boardOverview = boardSize.width >= 1100 && boardSize.height >= 900;
+      useEffect(function () {
+        const node = boardFrame.current;
+        if (!node || typeof ResizeObserver === 'undefined') return;
+        const observer = new ResizeObserver(function () {
+          setBoardSize({ width: node.clientWidth, height: node.clientHeight });
+        });
+        observer.observe(node);
+        return () => observer.disconnect();
+      }, []);
+
       // doneLimit 必须先声明再传给 useSnapshot（"全部记录"页可切到 all）
       const doneLimitState = useState(8);
       const doneLimit = doneLimitState[0];
@@ -2790,7 +2947,7 @@ window.__ModuleLoader__.load({
             cancelled = true;
           };
         },
-        [tab, boardWindow.kind, boardWindow.from, boardWindow.to],
+        [tab, boardWindow.kind, boardWindow.from, boardWindow.to, boardRevision],
       );
 
       /**
@@ -3641,7 +3798,7 @@ window.__ModuleLoader__.load({
             },
             h(ControlIcon, { name: 'settings' }), t('action.settings'),
           ),
-          h('button', { className: 'sct-action-btn', type: 'button', onClick: function () { reload(); } }, h(ControlIcon, { name: 'refresh' }), t('action.refresh')),
+          h('button', { className: 'sct-action-btn', type: 'button', onClick: function () { reload(); setBoardRevision(n => n + 1); } }, h(ControlIcon, { name: 'refresh' }), t('action.refresh')),
           h('div', { className: 'sct-theme-switch', role: 'group', 'aria-label': t('theme.label') },
             ['light', 'dark', 'system'].map((value) => h('button', {
               key: value, type: 'button', 'aria-pressed': appearance.theme === value,
@@ -4202,35 +4359,26 @@ window.__ModuleLoader__.load({
        * 两行 3+2 在 1440 宽下刚好，且不用滚动。
        */
       function renderBoard() {
-        if (boardError) {
-          return h(
-            'div',
-            { className: 'sct-empty', role: 'alert' },
-            h('h2', null, t('board.loadError')),
-            h('p', null, boardError),
-          );
-        }
-        if (!boardData) return h(Skeleton, null);
-
-        /**
-         * 局部别名。
-         *
-         * 组件里的状态变量叫 boardData，但函数体里十几处引用都写 board。
-         * 必须在这里建立别名——之前直接写 `if (!board)` 而组件里根本没有
-         * 这个名字，一点开看板页就 ReferenceError，整个插件都用不了。
-         */
+        const retry = () => setBoardRevision(n => n + 1);
+        if (boardError) return h('div', { className: 'sct-empty', role: 'alert' },
+          h('h2', null, t('board.loadError')), h('p', null, boardError),
+          h('button', { type: 'button', className: 'sct-btn', onClick: retry }, '重新加载'));
+        if (!boardData) return h('div', { className: 'sct-empty', role: 'status' }, '正在读取看板数据…');
         const board = boardData;
-        const st = board.stats;
-        const sv = board.statsView;
-        const charts = board.charts;
-
-        /**
-         * 时间窗口切换。
-         *
-         * 四个粒度：本月 / 本季 / 今年 / 自定义。
-         * "今年"是为了签订合同额这类累计指标——那是按年看的指标，
-         * 只有月/季时得点两次自定义才能看全年。
-         */
+        if (!board.insights?.views?.length) return h('div', { className: 'sct-empty', role: 'status' },
+          h('p', null, '统计服务正在更新，请重新加载。'), h('button', { type: 'button', className: 'sct-btn', onClick: retry }, '重新加载'));
+        const view = board.insights.views.find(v => v.id === boardView) || board.insights.views[0];
+        const selectedChart = view.charts.some(c => c.id === boardChart) ? boardChart : view.charts[0].id;
+        const format = (value, unit) => value === null ? '—' : unit === '元' ? compactMoney(value) : Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 1 });
+        const exact = (value, unit) => value === null ? '暂无可计算数据' : `${Number(value).toLocaleString('zh-CN', { maximumFractionDigits: 2 })}${unit}`;
+        const comparison = m => {
+          if (!m.change) return m.note;
+          const change = m.change;
+          if (m.unit === '%') return `较上期 ${change.delta > 0 ? '+' : ''}${change.delta} 个百分点`;
+          if (change.previous === 0) return change.delta === 0 ? '与上期持平' : '上期为 0';
+          return change.percent === 0 ? '与上期持平' : `较上期 ${change.percent > 0 ? '+' : ''}${change.percent}%`;
+        };
+        const tone = (key) => `var(--zw-${['success', 'danger', 'warning', 'muted'].includes(key) ? key : 'accent'})`;
         const windowBar = h(
           'div',
           { className: 'sct-boardbar' },
@@ -4254,7 +4402,9 @@ window.__ModuleLoader__.load({
                   className: active ? 'sct-winbtn is-active' : 'sct-winbtn',
                   'aria-pressed': active ? 'true' : 'false',
                   onClick: function () {
-                    setBoardWindow({ kind: key, from: boardWindow.from, to: boardWindow.to });
+                    setBoardWindow(key === 'custom'
+                      ? { kind: key, from: boardWindow.from || board.window.from, to: boardWindow.to || board.window.to }
+                      : { kind: key, from: '', to: '' });
                   },
                 },
                 label,
@@ -4270,7 +4420,7 @@ window.__ModuleLoader__.load({
                   'aria-label': t('board.from'),
                   value: boardWindow.from || board.window.from,
                   onChange: function (e) {
-                    setBoardWindow({ kind: 'custom', from: e.target.value, to: boardWindow.to });
+                    setBoardWindow({ kind: 'custom', from: e.target.value, to: boardWindow.to || board.window.to });
                   },
                 }),
                 h('span', { className: 'sct-boardbar-sep' }, '~'),
@@ -4279,7 +4429,7 @@ window.__ModuleLoader__.load({
                   'aria-label': t('board.to'),
                   value: boardWindow.to || board.window.to,
                   onChange: function (e) {
-                    setBoardWindow({ kind: 'custom', from: boardWindow.from, to: e.target.value });
+                    setBoardWindow({ kind: 'custom', from: boardWindow.from || board.window.from, to: e.target.value });
                   },
                 }),
               )
@@ -4287,271 +4437,96 @@ window.__ModuleLoader__.load({
           h('span', { className: 'sct-boardbar-label' }, board.window.label),
         );
 
-        /* ── 五个数据标签 ── */
 
-        /**
-         * 标签卡片。
-         *
-         * 第一张（签订合同额）用强调色：它是这五个里唯一的金额，
-         * 也是最先被看的数字。其余四个是同质计数，统一处理。
-         */
-        const makeStat = function (key, label, value, note, accent) {
-          return h(
-            'div',
-            { key: key, className: accent ? 'sct-stat is-accent' : 'sct-stat', title: note || undefined },
-            h('span', { className: 'sct-stat-key' }, label),
-            h('strong', { className: 'sct-stat-val' }, value),
-            note ? h('span', { className: 'sct-stat-note' }, note) : null,
-          );
+
+        const renderBars = (chart) => {
+          const size = 4;
+          const pages = Math.max(1, Math.ceil(chart.rows.length / size));
+          const pageKey = view.id + ':' + chart.id;
+          const page = Math.min(boardPages[pageKey] || 0, pages - 1);
+          const max = Math.max(1, ...chart.rows.map(r => r.value));
+          return h('div', { className: 'sct-insight-bars' },
+            h('div', { className: 'sct-insight-bar-rows' }, chart.rows.slice(page * size, (page + 1) * size).map(row =>
+              h('div', { key: row.label, className: 'sct-insight-bar-row', title: `${row.label}：${exact(row.value, chart.unit)}` },
+                h('span', { className: 'sct-insight-row-name' }, row.label),
+                h('div', { className: 'sct-insight-track', 'aria-hidden': 'true' }, h('span', { style: { width: `${row.value / max * 100}%`, background: tone(row.tone) } })),
+                h('strong', null, format(row.value, chart.unit))))),
+            pages > 1 ? h('div', { className: 'sct-insight-pager', 'aria-label': `${chart.title}分页` },
+              h('span', null, `${page + 1} / ${pages}`),
+              h('button', { type: 'button', disabled: page === 0, 'aria-label': `${chart.title}上一组`, onClick: () => setBoardPages(p => ({ ...p, [pageKey]: page - 1 })) }, '上一组'),
+              h('button', { type: 'button', disabled: page === pages - 1, 'aria-label': `${chart.title}下一组`, onClick: () => setBoardPages(p => ({ ...p, [pageKey]: page + 1 })) }, '下一组')) : null);
         };
-
-        const statRow = h(
-          'div',
-          { className: 'sct-stats' },
-          makeStat(
-            'signedAmount',
-            t('board.statSignedAmount'),
-            sv.signedAmount,
-            t('board.statSignedAmountNote'),
-            true,
-          ),
-          makeStat('signedCount', t('board.statSignedCount'), String(st.signedCount), t('board.statSignedCountNote')),
-          makeStat('salesCount', t('board.statSalesCount'), String(st.salesCount), t('board.statSalesCountNote')),
-          makeStat('visitCount', t('board.statVisitCount'), String(st.visitCount), t('board.statVisitCountNote')),
-          makeStat(
-            'opportunityCount',
-            t('board.statOpportunityCount'),
-            String(st.opportunityCount),
-            t('board.statOpportunityCountNote'),
-          ),
-        );
-
-        /* ── 图1：销售项目跟踪状态（横向条形，阶段多） ── */
-
-        const stageChart = charts.salesByStage;
-        const stageMax = Math.max(1, ...stageChart.items.map((x) => x.count));
-        const stageBars = h(
-          'div',
-          { className: 'sct-chart-hbar sct-chart-compact' },
-          ...stageChart.items.map(function (item) {
-            const pct = item.count > 0 ? Math.max(3, (item.count / stageMax) * 100) : 0;
-            return h(
-              'div',
-              { key: item.key, className: 'sct-hbar-row' },
-              h('span', { className: 'sct-hbar-name' }, item.label),
-              h(
-                'div',
-                { className: 'sct-hbar-track' },
-                item.count > 0
-                  ? h('span', {
-                      className: 'sct-hbar-fill ' + (item.key === '已中标' ? 'sct-hbar-ok' : item.key === '未中标' ? 'sct-hbar-bad' : 'sct-hbar-open'),
-                      style: { width: pct + '%' },
-                    })
-                  : null,
-              ),
-              // 数据标签：每行右侧直接写数量，不靠悬浮
-              h('span', { className: 'sct-hbar-value' }, h('strong', null, String(item.count))),
-            );
-          }),
-        );
-
-        /* ── 图2/3/4：三张月度柱状图，共用同一个渲染器 ── */
-
-        /**
-         * 月度柱状图。
-         *
-         * 数据标签规则：
-         *   · 窗口内的月 + 有值 → 标数字
-         *   · 窗口外的月       → 灰柱，不标（避免被误读成也算进来了）
-         *   · 0 值             → 不标（一排 0 很吵）
-         * 柱子高度按各自图的最大值归一，所以三张图之间的高度不可比——
-         * 它们本来回答的就是不同问题。
-         */
-        const monthlyChart = function (key, spec, colorKey) {
-          const max = Math.max(1, ...spec.items.map((x) => x.count));
-          return h(
-            'div',
-            { key: key, className: 'sct-chart-bar sct-chart-bar-tall' },
-            spec.items.map(function (m) {
-              const pct = m.count > 0 ? Math.max(4, (m.count / max) * 100) : 0;
-              const showVal = m.inWindow && m.count > 0;
-              return h(
-                'div',
-                {
-                  key: m.key,
-                  className: 'sct-cbar-col',
-                  title: `${m.key}　${m.count} ${spec.unit}`,
-                },
-                h('span', { className: 'sct-cbar-value' }, showVal ? String(m.count) : ''),
-                h(
-                  'div',
-                  { className: 'sct-cbar-track' },
-                  h('span', {
-                    className:
-                      'sct-cbar-fill sct-cbar-' + colorKey + (m.inWindow ? '' : ' is-muted'),
-                    style: { height: pct + '%' },
-                  }),
-                ),
-                h('span', { className: 'sct-cbar-label' + (m.inWindow ? ' is-active' : '') }, m.label),
-              );
-            }),
-          );
+        const renderTrend = (chart) => {
+          if (boardSize.width < 700 && chart.buckets.length > 6) {
+            const step = Math.ceil(chart.buckets.length / 6);
+            const grouped = [];
+            for (let i = 0; i < chart.buckets.length; i += step) {
+              grouped.push({ ...chart.buckets[i], to: chart.buckets[Math.min(i + step - 1, chart.buckets.length - 1)].to });
+            }
+            chart = { ...chart, buckets: grouped, series: chart.series.map(s => ({ ...s, values: grouped.map((_, i) => s.values.slice(i * step, (i + 1) * step).reduce((a, b) => a + b, 0)) })) };
+          }
+          const max = Math.max(1, ...chart.series.flatMap(s => s.values));
+          const hasData = chart.series.some(s => s.values.some(v => v !== 0));
+          return h('div', { className: 'sct-insight-trend' },
+            h('div', { className: 'sct-insight-series' }, chart.series.map(s => h('span', { key: s.label },
+              h('i', { style: { background: tone(s.tone) } }), s.label,
+              h('strong', { title: exact(s.values.reduce((a, b) => a + b, 0), chart.unit) }, format(s.values.reduce((a, b) => a + b, 0), chart.unit), chart.unit === '元' ? '元' : chart.unit)))),
+            h('div', { className: 'sct-insight-plot' },
+              !hasData ? h('span', { className: 'sct-insight-zero' }, '所选周期暂无记录') : null,
+              chart.buckets.map((bucket, i) => {
+                const detail = `${bucket.from} 至 ${bucket.to}：${chart.series.map(s => `${s.label} ${exact(s.values[i], chart.unit)}`).join('；')}`;
+                return h('div', { key: bucket.key, className: 'sct-insight-bucket', tabIndex: 0, 'aria-label': detail },
+                  h('div', { className: 'sct-insight-columns', 'aria-hidden': 'true' }, chart.series.map(s =>
+                    h('div', { key: s.label, className: 'sct-insight-column' },
+                      chart.series.length === 1 ? h('span', { className: 'sct-insight-point-value' }, s.values[i] ? format(s.values[i], chart.unit) : '') : null,
+                      h('div', { className: 'sct-insight-column-track' }, h('span', { style: { height: `${Math.max(0, s.values[i]) / max * 100}%`, background: tone(s.tone) } }))))),
+                  h('span', { className: 'sct-insight-bucket-label' }, bucket.label),
+                  h('span', { className: 'sct-insight-point-detail', 'aria-hidden': 'true' }, detail));
+              })));
         };
-
-        /* ── 图5：合同状态分布（环形） ── */
-
-        /**
-         * 环形图 + 图例。
-         *
-         * 为什么用环形而不是柱：合同状态是"构成"关系（五份合同分成
-         * 草拟/签订/履行/完成/解除几块），环形能一眼看出占比。
-         * 但环形**必须配图例**——五色的饼没人记得住哪块是什么。
-         */
-        const statusSpec = charts.contractByStatus;
-        const statusTotal = Math.max(1, statusSpec.total);
-        /**
-         * 合同状态配色。
-         *
-         * 五种状态要**颜色可区分**，且语义上说得通：
-         *   草拟   灰   —— 还没开始
-         *   已签订 蓝   —— 已启动
-         *   履行中 绿   —— 正在进行（最"活"的状态）
-         *   已完成 浅蓝 —— 正常结束
-         *   已解除 红   —— 异常结束
-         *
-         * 原来的「已完成」用 #8b949e（和「草拟」的灰几乎一样），
-         * 两个扇区在环上连成一片，用户分不出哪块是哪块。
-         */
-        const STATUS_COLORS = {
-          草拟: '#6e7681',
-          已签订: '#58a6ff',
-          履行中: '#3fb950',
-          已完成: '#a5d6ff',
-          已解除: '#ff7b72',
+        const renderDistribution = (chart) => {
+          const total = chart.rows.reduce((n, r) => n + r.value, 0);
+          const colors = ['var(--zw-muted)', 'var(--zw-accent)', 'var(--zw-success)', 'var(--zw-warning)', 'var(--zw-danger)'];
+          let offset = 0;
+          return h('div', { className: 'sct-insight-distribution', 'data-dense': chart.rows.length > 5 },
+            h('div', { className: 'sct-insight-ring' },
+              h('svg', { viewBox: '0 0 100 100', 'aria-hidden': 'true' },
+                h('circle', { cx: 50, cy: 50, r: 40, fill: 'none', stroke: 'var(--zw-line)', strokeWidth: 12 }),
+                chart.rows.map((row, i) => {
+                  const length = total ? row.value / total * 251.327 : 0;
+                  const circle = h('circle', { key: row.label, cx: 50, cy: 50, r: 40, fill: 'none', stroke: colors[i % colors.length], strokeWidth: 12, strokeDasharray: `${length} ${251.327 - length}`, strokeDashoffset: -offset, transform: 'rotate(-90 50 50)' });
+                  offset += length;
+                  return circle;
+                })),
+              h('div', null, h('strong', null, total), h('span', null, '合同总数'))),
+            h('div', { className: 'sct-insight-legend' }, chart.rows.map((row, i) => h('div', { key: row.label },
+              h('i', { style: { background: colors[i % colors.length] } }), h('span', null, row.label), h('strong', null, row.value), h('small', null, total ? `${Math.round(row.value / total * 100)}%` : '—')))));
         };
+        const renderOutcomes = (chart) => h('table', { className: 'sct-insight-table' },
+          h('thead', null, h('tr', null, h('th', { scope: 'col' }, '结果'), h('th', { scope: 'col' }, '数量'), h('th', { scope: 'col' }, '成交金额'))),
+          h('tbody', null, chart.rows.map(row => h('tr', { key: row.label },
+            h('th', { scope: 'row' }, row.label), h('td', null, row.count),
+            h('td', { title: exact(row.amount, '元') }, format(row.amount, '元'), row.missing ? h('small', null, `${row.missing} 项金额待补`) : null)))));
+        const panel = chart => h('section', { key: chart.id, className: 'sct-panel sct-insight-panel', hidden: !boardOverview && chart.id !== selectedChart, 'aria-label': chart.title },
+          h('header', { className: 'sct-panel-head' }, h('h3', null, chart.title), chart.unit ? h('span', { className: 'sct-panel-extra' }, chart.unit === '元' ? '金额 / 元' : `单位 / ${chart.unit}`) : null),
+          h('div', { className: 'sct-panel-body' }, chart.kind === 'trend' ? renderTrend(chart) : chart.kind === 'distribution' ? renderDistribution(chart) : chart.kind === 'outcomes' ? renderOutcomes(chart) : renderBars(chart)),
+          h('p', { className: 'sct-insight-note', title: chart.note }, chart.note));
 
-        const donutSize = 108;
-        const donutStroke = 13;
-        const donutR = (donutSize - donutStroke) / 2;
-        const donutC = 2 * Math.PI * donutR;
-        let offset = 0;
-        const donutSegs = statusSpec.items
-          .filter((x) => x.count > 0)
-          .map(function (x) {
-            const frac = x.count / statusTotal;
-            const dash = frac * donutC;
-            const seg = h('circle', {
-              key: x.key,
-              cx: donutSize / 2,
-              cy: donutSize / 2,
-              r: donutR,
-              fill: 'none',
-              stroke: STATUS_COLORS[x.key] || 'var(--zw-line)',
-              'stroke-width': donutStroke,
-              'stroke-dasharray': `${dash} ${donutC - dash}`,
-              // 从上一个段的末尾接着画
-              'stroke-dashoffset': -offset,
-              transform: `rotate(-90 ${donutSize / 2} ${donutSize / 2})`,
-            });
-            offset += dash;
-            return seg;
-          });
-
-        const statusDonut = h(
-          'div',
-          { className: 'sct-donut-wrap' },
-          h(
-            'div',
-            { className: 'sct-donut', style: { width: donutSize + 'px', height: donutSize + 'px' } },
-            h(
-              'svg',
-              { width: donutSize, height: donutSize, viewBox: `0 0 ${donutSize} ${donutSize}`, 'aria-hidden': 'true' },
-              // 底环：总数为 0 时也能看出这是个环，而不是坏掉的图
-              h('circle', {
-                cx: donutSize / 2,
-                cy: donutSize / 2,
-                r: donutR,
-                fill: 'none',
-                stroke: 'var(--zw-line)',
-                'stroke-width': donutStroke,
-              }),
-              donutSegs,
-            ),
-            h(
-              'div',
-              { className: 'sct-donut-label' },
-              h('strong', null, String(statusSpec.total)),
-              h('span', null, t('board.contractTotal')),
-            ),
-          ),
-          // 图例：每项都直接写数量（数据标签）
-          h(
-            'div',
-            { className: 'sct-legend' },
-            ...statusSpec.items.map(function (x) {
-              return h(
-                'span',
-                { key: x.key, className: 'sct-legend-item' },
-                h('i', { style: { background: STATUS_COLORS[x.key] || 'var(--zw-line)' } }),
-                h('em', null, x.label),
-                h('b', null, String(x.count)),
-              );
-            }),
-          ),
-        );
-
-        /* ── 组装 ── */
-
-        const makePanel = function (key, title, extra, body) {
-          return h(
-            'section',
-            { key: key, className: 'sct-panel' },
-            h(
-              'header',
-              { className: 'sct-panel-head' },
-              h('h3', null, title),
-              extra ? h('span', { className: 'sct-panel-extra' }, extra) : null,
-            ),
-            h('div', { className: 'sct-panel-body' }, body),
-          );
-        };
-
-        return h(
-          'div',
-          { className: 'sct-board-page' },
-          windowBar,
-          statRow,
-          h(
-            'div',
-            { className: 'sct-board-grid' },
-            makePanel('stage', charts.salesByStage.title, `${stageChart.total} ${stageChart.unit}`, stageBars),
-            makePanel(
-              'signed',
-              charts.signedMonthly.title,
-              `${charts.signedMonthly.total} ${charts.signedMonthly.unit}`,
-              monthlyChart('signed', charts.signedMonthly, 'blue'),
-            ),
-            makePanel(
-              'visit',
-              charts.visitMonthly.title,
-              `${charts.visitMonthly.total} ${charts.visitMonthly.unit}`,
-              monthlyChart('visit', charts.visitMonthly, 'green'),
-            ),
-            makePanel(
-              'opp',
-              charts.opportunityMonthly.title,
-              `${charts.opportunityMonthly.total} ${charts.opportunityMonthly.unit}`,
-              monthlyChart('opp', charts.opportunityMonthly, 'purple'),
-            ),
-            makePanel(
-              'status',
-              charts.contractByStatus.title,
-              `${charts.contractByStatus.total} ${charts.contractByStatus.unit}`,
-              statusDonut,
-            ),
-          ),
-        );
+        return h('div', { className: 'sct-board-page sct-insights', 'data-overview': boardOverview, 'aria-busy': boardLoading },
+          h('div', { className: 'sct-insight-toolbar' },
+            h('div', { className: 'sct-insight-views', role: 'group', 'aria-label': '看板视图' }, board.insights.views.map(v =>
+              h('button', { key: v.id, type: 'button', 'aria-pressed': view.id === v.id, onClick: () => { setBoardView(v.id); setBoardChart(''); } }, v.title))),
+            windowBar),
+          h('div', { className: 'sct-stats' }, view.metrics.map((m, i) => h('div', { key: m.label, className: i === 0 ? 'sct-stat is-accent' : 'sct-stat', tabIndex: 0, title: `${m.label}：${exact(m.value, m.unit)}。${m.note}${m.change ? `。对比 ${board.insights.comparison.from} 至 ${board.insights.comparison.to}：${exact(m.change.previous, m.unit)}` : ''}`, 'aria-label': `${m.label} ${exact(m.value, m.unit)}，${m.note}，${comparison(m)}` },
+            h('span', { className: 'sct-stat-key' }, m.label),
+            h('strong', { className: 'sct-stat-val', style: m.tone ? { color: tone(m.tone) } : undefined }, format(m.value, m.unit), m.value !== null ? h('small', null, m.unit === '%' ? '%' : m.unit === '元' ? '元' : m.unit) : null),
+            h('span', { className: 'sct-stat-note' }, comparison(m))))),
+          h('div', { className: 'sct-board-navigation' },
+            h('span', { className: 'muted small', role: 'status' }, boardLoading ? '正在更新统计…' : `${board.window.label} · ${board.insights.qualityCount ? `${board.insights.qualityCount} 项数据待补充` : '数据已更新'}`),
+            !boardOverview ? h('select', { 'aria-label': '选择统计图', value: selectedChart, onChange: e => setBoardChart(e.target.value) }, view.charts.map(c => h('option', { key: c.id, value: c.id }, c.title))) : null),
+          h('div', { className: 'sct-board-grid' }, view.charts.map(panel)));
       }
+
 
       } else if (tab === 'customers') {
         listContent = customers.length
@@ -4707,7 +4682,7 @@ window.__ModuleLoader__.load({
         h(
           'div',
           {
-            className: 'sct-list-scroll',
+            className: tab === 'board' ? 'sct-list-scroll sct-board-host' : 'sct-list-scroll',
             // tabpanel：与活动页签通过 aria-labelledby 关联（U05）
             id: 'sct-tabpanel',
             role: 'tabpanel',
@@ -4715,7 +4690,7 @@ window.__ModuleLoader__.load({
             'aria-labelledby': TAB_IDS[tab],
           },
           listContent,
-          h(
+          tab === 'board' ? null : h(
             'footer',
             { className: 'sct-list-end' },
             h('span', null, t('footer.note')),
@@ -4895,7 +4870,7 @@ window.__ModuleLoader__.load({
 
       return h(
         'div',
-        { className: 'sct-root', 'data-theme': appearance.resolved, 'data-theme-mode': appearance.theme },
+        { className: 'sct-root', ref: boardFrame, 'data-view': tab, 'data-board-short': boardSize.height < 700, 'data-theme': appearance.resolved, 'data-theme-mode': appearance.theme },
         topbar,
         /**
          * 顺序必须是 **main 在前、aside 在后**。
@@ -4905,7 +4880,7 @@ window.__ModuleLoader__.load({
          * 辅助区会占据主列（实测表现为：左边一大块空白 + 内容挤到右侧一窄条），
          * 而且窄屏单栏时辅助区会跑到主区**上面**。
          */
-        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, hero, capture, h('div', { className: 'sct-layout' }, main, aside))),
+        h('div', { className: 'sct-scroll' }, h('div', { className: 'sct-shell' }, tab === 'board' ? null : hero, tab === 'board' ? null : capture, h('div', { className: 'sct-layout' }, main, tab === 'board' ? null : aside))),
         drawers,
         toastNode,
       );
