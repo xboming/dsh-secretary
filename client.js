@@ -1093,7 +1093,6 @@ window.__ModuleLoader__.load({
 .sct-workspace-actions{display:flex;align-items:center;gap:6px;flex:none}
 .sct-root .sct-workspace-actions button{display:inline-flex;align-items:center;gap:6px;min-height:30px;padding:4px 10px;font-size:12px;background:transparent;border-color:transparent;color:var(--zw-muted)}
 .sct-root .sct-workspace-actions button[aria-expanded="true"]{background:var(--zw-accent-soft);color:var(--zw-accent-on-soft)}
-.sct-record-capture[hidden]{display:none}
 .sct-root .sct-record-capture .sct-capture{margin:0 0 12px;padding:8px}
 .sct-agenda-panel{position:absolute;z-index:10;top:64px;right:24px;bottom:20px;width:min(480px,calc(100% - 48px));display:flex;flex-direction:column;border:1px solid var(--zw-line-strong);border-radius:12px;background:var(--zw-surface);overflow:hidden}
 .sct-agenda-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 18px;border-bottom:1px solid var(--zw-line);flex:none}
@@ -1117,7 +1116,6 @@ window.__ModuleLoader__.load({
         'brand.sub': '记录细微，回看进展',
         'sidebar.label': '知微观澜',
         'action.refresh': '刷新',
-        'workspace.quick': '快速记录',
         'workspace.agenda': '日程与提醒',
         'action.settings': '提醒设置',
         'action.close': '关闭',
@@ -1362,7 +1360,6 @@ window.__ModuleLoader__.load({
         'brand.sub': 'Notice the subtle, review the flow',
         'sidebar.label': 'Insight Desk',
         'action.refresh': 'Refresh',
-        'workspace.quick': 'Quick capture',
         'workspace.agenda': 'Agenda & reminders',
         'action.settings': 'Reminders',
         'action.close': 'Close',
@@ -2755,16 +2752,10 @@ window.__ModuleLoader__.load({
       const tab = tabState[0];
       const setTab = tabState[1];
       const recordView = tab === 'pending' || tab === 'all';
-      const [captureOpen, setCaptureOpen] = useState(false);
       const [agendaOpen, setAgendaOpen] = useState(false);
-      const captureRegionRef = useRef(null);
       const agendaPanelRef = useRef(null);
       const agendaToggleRef = useRef(null);
-      const captureToggleRef = useRef(null);
       const closeAgenda = () => { setAgendaOpen(false); agendaToggleRef.current?.focus(); };
-      useEffect(() => {
-        if (captureOpen && recordView) captureRegionRef.current?.querySelector('input')?.focus();
-      }, [captureOpen, recordView]);
       useEffect(() => { setAgendaOpen(false); }, [tab]);
       useEffect(() => {
         if (!agendaOpen) return;
@@ -4763,10 +4754,8 @@ window.__ModuleLoader__.load({
           { className: 'sct-main-head' },
           recordView ? h('div', { className: 'sct-workspace-nav' }, tabs,
             h('div', { className: 'sct-workspace-actions' },
-              h('button', { ref: captureToggleRef, type: 'button', 'aria-expanded': captureOpen, 'aria-controls': 'sct-record-capture', onClick: () => setCaptureOpen(open => !open) }, t('workspace.quick')),
               h('button', { ref: agendaToggleRef, type: 'button', 'aria-expanded': agendaOpen, 'aria-controls': 'sct-agenda-panel', onClick: () => setAgendaOpen(open => !open) }, h(ControlIcon, { name: 'calendar' }), t('workspace.agenda')))) : tabs,
-          recordView ? h('div', { id: 'sct-record-capture', className: 'sct-record-capture', ref: captureRegionRef, hidden: !captureOpen,
-            onKeyDown: e => { if (e.key === 'Escape') { setCaptureOpen(false); captureToggleRef.current?.focus(); } } }, capture) : null,
+          tab === 'pending' ? h('div', { id: 'sct-record-capture', className: 'sct-record-capture' }, capture) : null,
           showScopeFilter ? h('div', { className: 'sct-list-controls' }, filter, toolbar) : null,
         ),
         h(
