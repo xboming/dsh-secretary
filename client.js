@@ -437,27 +437,19 @@ window.__ModuleLoader__.load({
 /* 专用控件统一用 .sct-root .sct-x（0,2,0）压过基础规则（0,1,0）——U04。
    完成控件使用独立样式，标题必须是**看起来像文字**的入口：
    两者都要显式清掉基础规则的 background/border/padding/min-height。 */
-.sct-root .sct-check{flex:none;display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;min-height:24px;padding:0;margin-top:2px;border-radius:50%;border:1px solid var(--zw-line-strong);background:transparent;color:var(--zw-muted);font-size:12px;line-height:1;position:relative;transition:border-color .13s,background .13s,color .13s}
-/* 未完成的圆圈是**可点的控件边界**，必须达到 3:1（6.2）。
-   用 muted 文字色做描边而不是 border-l2：后者在深色主题下只有 1.9:1。
-   仍保持"未完成 = 弱"的心智，但看得见。 */
-.sct-root .sct-check{border-color:var(--zw-muted)}
-/* 视觉 24px，命中区 44px（透明扩展，符合触控要求且不撑开布局） */
-.sct-root .sct-check::before{content:"";position:absolute;inset:-10px;border-radius:50%}
-.sct-root .sct-check:hover{border-color:var(--zw-accent);color:var(--zw-accent);background:transparent}
-.sct-root .sct-check[data-done="true"]{border-color:var(--zw-success);background:var(--zw-success);color:var(--zw-accent-text)}
-.sct-root .sct-check[data-shape="idea"]{border-color:var(--zw-accent);color:var(--zw-accent)}
-/* 经验教训库：方形入口 + 中性色，与"可勾选的圆"明确区分，暗示它不是动作 */
-.sct-root .sct-check[data-shape="archive"]{border-radius:6px;border-color:var(--zw-line-strong);color:var(--zw-muted);font-size:13px}
-.sct-root .sct-check:focus-visible{outline:2px solid var(--zw-focus);outline-offset:3px}
-/* 完成操作：紧凑圆角方框；悬停预览勾，完成后实心勾。 */
-.sct-root .sct-check[data-shape="task"]{width:22px;height:22px;min-height:22px;margin-top:1px;border:1.5px solid var(--zw-muted);border-radius:6px;background:var(--zw-surface);color:var(--zw-accent);appearance:none;transition:background .15s,border-color .15s,color .15s}
-.sct-root .sct-check[data-shape="task"]::before{inset:-11px;border-radius:10px}
-.sct-root .sct-check .sct-check-mark{width:14px;height:14px;stroke-width:2.4;opacity:0;transition:opacity .15s;pointer-events:none}
-.sct-root .sct-check[data-shape="task"]:is(:hover,:focus-visible){border-color:var(--zw-accent);background:var(--zw-accent-soft)}
-.sct-root .sct-check[data-shape="task"]:is(:hover,:focus-visible) .sct-check-mark{opacity:.65}
-.sct-root .sct-check[data-shape="task"][data-done="true"]{background:var(--zw-accent);border-color:var(--zw-accent);color:var(--zw-accent-text)}
-.sct-root .sct-check[data-shape="task"][data-done="true"] .sct-check-mark{opacity:1}
+/* 所有方框共用尺寸、主题和勾形；列表按钮保留 44px 命中区。 */
+.sct-root .sct-check,.sct-root .sct-checkbox-box{flex:none;display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;min-height:22px;padding:0;margin:1px 0 0;border:1.5px solid var(--zw-muted);border-radius:6px;background:var(--zw-surface);color:var(--zw-accent);appearance:none;position:relative;box-sizing:border-box;transition:background .15s,border-color .15s,color .15s}
+.sct-root .sct-check::before{content:"";position:absolute;inset:-11px;border-radius:10px}
+.sct-root .sct-check-mark{width:14px;height:14px;stroke-width:2.4;opacity:0;transition:opacity .15s;pointer-events:none}
+.sct-root .sct-check:is(:hover,:focus-visible),.sct-checkbox:hover .sct-checkbox-box,.sct-checkbox input:focus-visible+.sct-checkbox-box{border-color:var(--zw-accent);background:var(--zw-accent-soft)}
+.sct-check[data-shape="task"]:is(:hover,:focus-visible) .sct-check-mark,.sct-checkbox:hover .sct-check-mark,.sct-checkbox input:focus-visible+.sct-checkbox-box .sct-check-mark{opacity:.65}
+.sct-root .sct-check[data-done="true"],.sct-root .sct-checkbox input:checked+.sct-checkbox-box{background:var(--zw-accent);border-color:var(--zw-accent);color:var(--zw-accent-text)}
+.sct-root .sct-check[data-done="true"] .sct-check-mark,.sct-checkbox input:checked+.sct-checkbox-box .sct-check-mark{opacity:1}
+.sct-root .sct-check:focus-visible,.sct-checkbox input:focus-visible+.sct-checkbox-box{outline:2px solid var(--zw-focus);outline-offset:3px}
+.sct-checkline{min-height:44px;cursor:pointer}
+.sct-checkbox{display:inline-flex;align-items:center;position:relative;flex:none}
+.sct-root .sct-checkbox input[type="checkbox"]{position:absolute;inset:0;width:100%;height:100%;min-width:0;min-height:0;margin:0;padding:0;opacity:0;cursor:pointer}
+.sct-checkbox-box{pointer-events:none}
 
 .sct-root .sct-task-title{display:block;width:100%;background:none;border:0;padding:1px 2px;margin:-1px -2px;min-height:0;border-radius:4px;text-align:left;font-size:15px;font-weight:600;line-height:1.5;color:var(--zw-text);white-space:normal;overflow-wrap:anywhere}
 .sct-root .sct-task-title:hover{background:var(--zw-hover);color:var(--zw-text)}
@@ -1851,6 +1843,11 @@ window.__ModuleLoader__.load({
       return h('div', { className: 'sct-cal' }, head.concat(body));
     }
 
+    function CheckMark() {
+      return h('svg', { className: 'sct-check-mark', viewBox: '0 0 20 20', 'aria-hidden': 'true' },
+        h('path', { d: 'm4 10 4 4 8-8' }));
+    }
+
     function TaskRow(props) {
       const item = props.item;
       const t = props.t;
@@ -1930,8 +1927,7 @@ window.__ModuleLoader__.load({
 
       /**
        * 经验教训库（lifecycle=journal）的条目没有"完成/重开/改期"这些动作。
-       * 不能只把按钮藏起来——完成按钮本身也得换成查看入口符号，
-       * 否则用户点下去什么都不会发生，比不显示更糟。
+       * 方框外观统一，但这些条目仍打开详情，不提供完成或重开动作。
        * `archived` 已在上方随 meta 一起算好，这里直接复用。
        */
       const canComplete = !isIdea && !archived;
@@ -1952,20 +1948,20 @@ window.__ModuleLoader__.load({
                 'aria-label': done ? t('action.reopen') + '：' + item.title : t('action.done') + '：' + item.title,
                 onClick: function () { props.onToggleDone(item); },
               },
-              h('svg', { className: 'sct-check-mark', viewBox: '0 0 20 20', 'aria-hidden': 'true' },
-                h('path', { d: 'm4 10 4 4 8-8' })),
+              h(CheckMark),
             )
           : h(
-              // 非动作元素：经验条目/Idea 用符号标记，点击等同"查看"
+              // 灵感与经验条目使用同一方框，点击仍等同“查看”。
               'button',
               {
                 className: 'sct-check',
                 type: 'button',
                 'data-shape': archived ? 'archive' : 'idea',
                 'aria-label': t('action.view') + '：' + item.title,
+                title: t('action.view'),
                 onClick: function () { props.onView(item); },
               },
-              archived ? '≡' : '✧',
+              null,
             ),
         h(
           'div',
@@ -3957,13 +3953,13 @@ window.__ModuleLoader__.load({
             h(
               'label',
               { className: 'sct-checkline' },
-              h('input', {
+              h('span', { className: 'sct-checkbox' }, h('input', {
                 type: 'checkbox',
                 onChange: function (event) {
                   // 明确选择"无期限"：openEnded 只表达期限，不参与去重
                   if (event.target.checked) submitQuick({ ...keep.fields, openEnded: true }, false, keep);
                 },
-              }),
+              }), h('span', { className: 'sct-checkbox-box', 'aria-hidden': 'true' }, h(CheckMark))),
               t('quick.openEnded'),
             ),
             h('button', { type: 'button', className: 'ghost', onClick: function () { setConfirm(null); } }, t('action.cancel')),
