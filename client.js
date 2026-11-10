@@ -119,6 +119,11 @@ window.__ModuleLoader__.load({
   --zw-warn-soft:color-mix(in srgb,var(--dsw-alias-state-warn-primary) 13%,var(--dsw-alias-bg-layer-1));
   --zw-success:var(--dsw-alias-state-success-primary);
   --zw-focus:var(--dsw-alias-brand-primary);
+  /* 图表专用色：一张页里三张柱状图，同色会看串，所以各给一个。
+     它们也必须是令牌而不是散落 hex——写死 hex 在深色主题下不会跟着变，
+     而且会被 design-check 的"令牌块外无 hex"规则判失败。 */
+  --zw-chart-blue:#2f6fd0;
+  --zw-chart-purple:#7a4fd0;
   /* ---- 状态文字在柔和底色上的强化版本（6.2 对比度） ----
      柔和底色（*-soft）会抬高背景亮度，纯品牌/警告色压在其上达不到 4.5:1
      （浅色主题实测：今日到期 4.30、临期 3.97）。把状态色向**主文字色**混一档：
@@ -143,6 +148,9 @@ window.__ModuleLoader__.load({
   --dsw-alias-state-warn-primary:#e6c477;
   --dsw-alias-state-success-primary:#8ed5b1;
   --zw-accent-text:#172b52;
+  /* 图表色在深色底上要提亮，否则柱子在暗背景里发糊 */
+  --zw-chart-blue:#6ea8ff;
+  --zw-chart-purple:#b18cff;
 }
 `;
 
@@ -333,9 +341,9 @@ window.__ModuleLoader__.load({
 .sct-cbar-track{width:100%;flex:1 1 auto;min-height:0;display:flex;align-items:flex-end;justify-content:center}
 .sct-cbar-fill{width:min(100%,22px);border-radius:3px 3px 0 0;background:var(--zw-accent)}
 /* 三张图各用一个颜色，方便区分（同一页里三张柱状图，同色会看串） */
-.sct-cbar-blue{background:#58a6ff}
+.sct-cbar-blue{background:var(--zw-chart-blue)}
 .sct-cbar-green{background:var(--zw-success)}
-.sct-cbar-purple{background:#bc8cff}
+.sct-cbar-purple{background:var(--zw-chart-purple)}
 /* 窗口外的月份：留形状不留势，且不标数值 */
 .sct-cbar-fill.is-muted{background:var(--zw-line-strong);opacity:.5}
 .sct-cbar-label{font-size:9.5px;color:var(--zw-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;flex:none;height:12px;display:flex;align-items:flex-end}
