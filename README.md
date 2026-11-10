@@ -8,7 +8,7 @@
 
 </div>
 
-![面板](docs/images/panel-dark.png)
+![面板](docs/images/panel-dark-2.png)
 
 ---
 
@@ -158,7 +158,7 @@
 
 ### 面板
 
-![浅色主题](docs/images/panel-light.png)
+![浅色主题](docs/images/panel-light-2.png)
 
 顶部四个页签：**待办事项 / 全部记录 / 数据看板 / 客户台账**。
 
