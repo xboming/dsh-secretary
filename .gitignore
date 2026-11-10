@@ -36,13 +36,16 @@ Desktop.ini
 # ---- 开发与验收产物：不随包发布 ----
 # 这个仓库只发布**项目文件**（宿主 + 前端 + 文档 + 示例图）。
 # 测试脚本、渲染验收页、截图与量测结果都留在本地，不进入版本库：
-#   tests/   回归脚本（smoke / review-* / design-check / shots …）
-#   tools/   本地开发脚本（reload / e2e-flow / check-vault / board-* …）
-#   shots/   render-harness.mjs 生成的验收页与 PNG
+#   tests/             回归脚本（smoke / review-* / design-check / shots …）
+#   tools/             本地开发脚本（reload / e2e-flow / real-render / real-snapshot …）
+#   shots/             render-harness.mjs 生成的验收页与 PNG
+#   shots-real*/       tools/real-render.mjs 用真实 client.js 渲染出的页面与截图
 # 它们依赖临时目录、本机 Chrome 与真实数据目录，对使用者没有意义。
 tests/
 tools/
 shots/
+shots-real/
+shots-real-board/
 .review-artifacts/
 
 # ---- 内部协作文件：不进公开仓库 ----
